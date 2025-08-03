@@ -1,0 +1,14 @@
+@prefix lws: <https://www.w3.org/ns/auth/lws#> .
+
+### Rules that should apply in ALL permissioning systems
+
+{
+  ?subject a lws:Controller ;
+  ?subject lws:hasPermission ?permission ;
+} => {
+  
+} .
+
+### Sample system level data
+
+

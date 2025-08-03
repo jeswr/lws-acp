@@ -1,0 +1,3 @@
+# https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps_syntax.html
+
+@prefix s3: <https://www.w3.org/ns/auth/s3#> .
