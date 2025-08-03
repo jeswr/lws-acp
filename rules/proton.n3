@@ -1,0 +1,16 @@
+@prefix proton: <https://www.w3.org/ns/auth/proton#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+{
+  ?req proton:requestedBy ?p ;
+       proton:requestedAction ?a ;
+       proton:requestedResource ?r .
+  ?r proton:hasPermission ?perm .
+  ?perm proton:principal ?p ; proton:role ?role .
+  ?role proton:permits ?a .
+} => { ?req proton:decision proton:Allowed . } .
+
+{
+  ?req a proton:AccessRequest .
+  not { ?req proton:decision ?d . }
+} => { ?req proton:decision proton:Denied . } .

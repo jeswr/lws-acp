@@ -1,0 +1,51 @@
+@prefix sync: <https://www.w3.org/ns/auth/sync#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vann/> .
+
+<https://www.w3.org/ns/auth/sync> a owl:Ontology ;
+  rdfs:label "Sync.com Permission Vocabulary"@en ;
+  dct:description "Simplified Sync.com share permissions for LWS comparison."@en ;
+  vann:preferredNamespacePrefix "sync" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/sync#"^^xsd:anyURI ;
+  dct:issued "2025-08-03"^^xsd:date ;
+  rdfs:seeAlso <https://help.sync.com/hc/en-us/articles/360029065271-Permissions-explained> .
+
+sync:Permission a rdfs:Class .
+sync:Role a rdfs:Class .
+sync:Principal a rdfs:Class .
+sync:User a rdfs:Class ; rdfs:subClassOf sync:Principal .
+
+sync:Resource a rdfs:Class .
+sync:File a rdfs:Class ; rdfs:subClassOf sync:Resource .
+sync:Folder a rdfs:Class ; rdfs:subClassOf sync:Resource .
+
+sync:Action a rdfs:Class .
+  sync:View a sync:Action .
+  sync:Edit a sync:Action .
+  sync:Upload a sync:Action .
+  sync:Share a sync:Action .
+
+sync:AccessRequest a rdfs:Class .
+
+sync:hasPermission a rdf:Property ; rdfs:domain sync:Resource ; rdfs:range sync:Permission .
+sync:principal a rdf:Property ; rdfs:domain sync:Permission ; rdfs:range sync:Principal .
+sync:role      a rdf:Property ; rdfs:domain sync:Permission ; rdfs:range sync:Role .
+sync:permits   a rdf:Property ; rdfs:domain sync:Role ; rdfs:range sync:Action .
+
+sync:requestedBy a rdf:Property ; rdfs:domain sync:AccessRequest ; rdfs:range sync:Principal .
+sync:requestedAction a rdf:Property ; rdfs:domain sync:AccessRequest ; rdfs:range sync:Action .
+sync:requestedResource a rdf:Property ; rdfs:domain sync:AccessRequest ; rdfs:range sync:Resource .
+sync:decision a rdf:Property ; rdfs:domain sync:AccessRequest .
+
+# Roles
+sync:Owner a sync:Role .
+sync:Editor a sync:Role .
+sync:Viewer a sync:Role .
+
+sync:Owner sync:permits sync:View , sync:Edit , sync:Upload , sync:Share .
+sync:Editor sync:permits sync:View , sync:Edit , sync:Upload .
+sync:Viewer sync:permits sync:View .

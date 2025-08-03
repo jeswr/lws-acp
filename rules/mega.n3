@@ -1,0 +1,8 @@
+@prefix mega: <https://www.w3.org/ns/auth/mega#> .
+{ ?req mega:requestedBy ?p ; mega:requestedAction ?a ; mega:requestedResource ?r .
+  ?r mega:hasPermission ?perm .
+  ?perm mega:principal ?p ; mega:role ?role .
+  ?role mega:permits ?a .
+} => { ?req mega:decision mega:Allowed . } .
+
+{ ?req a mega:AccessRequest . not { ?req mega:decision ?d . } } => { ?req mega:decision mega:Denied . } .

@@ -1,0 +1,72 @@
+@prefix dbx: <https://www.w3.org/ns/auth/dropbox#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vann/> .
+
+<https://www.w3.org/ns/auth/dropbox> a owl:Ontology ;
+  rdfs:label "Dropbox Access Control Vocabulary"@en ;
+  dct:description "Key notions in Dropbox sharing & permissioning expressed as RDF for comparison in LWS."@en ;
+  vann:preferredNamespacePrefix "dbx" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/dropbox#"^^xsd:anyURI ;
+  dct:issued "2025-08-03"^^xsd:date ;
+  rdfs:seeAlso <https://help.dropbox.com/share/set-file-folder-permissions> .
+
+#########
+# CLASSES
+#########
+
+dbx:Permission a rdfs:Class ; rdfs:label "Permission"@en .
+dbx:Role       a rdfs:Class ; rdfs:label "Role"@en .
+dbx:Principal  a rdfs:Class ; rdfs:label "Principal"@en .
+dbx:User       a rdfs:Class ; rdfs:subClassOf dbx:Principal ; rdfs:label "User"@en .
+dbx:Team       a rdfs:Class ; rdfs:subClassOf dbx:Principal ; rdfs:label "Team"@en .
+dbx:Link       a rdfs:Class ; rdfs:subClassOf dbx:Principal ; rdfs:label "Shared link"@en .
+
+dbx:Resource   a rdfs:Class ; rdfs:label "Dropbox resource"@en .
+dbx:File       a rdfs:Class ; rdfs:subClassOf dbx:Resource ; rdfs:label "File"@en .
+dbx:Folder     a rdfs:Class ; rdfs:subClassOf dbx:Resource ; rdfs:label "Folder"@en .
+
+dbx:Action     a rdfs:Class .
+  dbx:View      a dbx:Action ; rdfs:label "view"@en .
+  dbx:Edit      a dbx:Action ; rdfs:label "edit"@en .
+  dbx:Comment   a dbx:Action ; rdfs:label "comment"@en .
+  dbx:Download  a dbx:Action ; rdfs:label "download"@en .
+  dbx:Upload    a dbx:Action ; rdfs:label "upload"@en .
+  dbx:Share     a dbx:Action ; rdfs:label "share"@en .
+
+dbx:AccessRequest a rdfs:Class ; rdfs:label "Access request"@en .
+
+##############
+# PROPERTIES
+##############
+
+dbx:hasPermission   a rdf:Property ; rdfs:domain dbx:Resource ; rdfs:range dbx:Permission .
+dbx:principal       a rdf:Property ; rdfs:domain dbx:Permission ; rdfs:range dbx:Principal .
+dbx:role            a rdf:Property ; rdfs:domain dbx:Permission ; rdfs:range dbx:Role .
+dbx:permits         a rdf:Property ; rdfs:domain dbx:Role ; rdfs:range dbx:Action .
+
+dbx:requestedBy      a rdf:Property ; rdfs:domain dbx:AccessRequest ; rdfs:range dbx:Principal .
+dbx:requestedAction  a rdf:Property ; rdfs:domain dbx:AccessRequest ; rdfs:range dbx:Action .
+dbx:requestedResource a rdf:Property ; rdfs:domain dbx:AccessRequest ; rdfs:range dbx:Resource .
+dbx:decision         a rdf:Property ; rdfs:domain dbx:AccessRequest .
+
+################
+# ROLE INSTANCES
+################
+
+dbx:Owner            a dbx:Role ; rdfs:label "Owner"@en .
+dbx:Editor           a dbx:Role ; rdfs:label "Editor"@en .
+dbx:Viewer           a dbx:Role ; rdfs:label "Viewer"@en .
+dbx:ViewerNoDownload a dbx:Role ; rdfs:label "Viewer (no download)"@en .
+dbx:Uploader         a dbx:Role ; rdfs:label "Uploader"@en .
+
+# Role → action matrix (simplified)
+
+dbx:Owner            dbx:permits dbx:View , dbx:Edit , dbx:Comment , dbx:Download , dbx:Upload , dbx:Share .
+dbx:Editor           dbx:permits dbx:View , dbx:Edit , dbx:Comment , dbx:Download , dbx:Share .
+dbx:Viewer           dbx:permits dbx:View , dbx:Download .
+dbx:ViewerNoDownload dbx:permits dbx:View .
+dbx:Uploader         dbx:permits dbx:Upload .

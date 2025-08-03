@@ -1,0 +1,24 @@
+@prefix dbx: <https://www.w3.org/ns/auth/dropbox#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+###################################################################
+#  Simplified Dropbox permission evaluation                       #
+###################################################################
+
+# Allow when role permits action
+{
+  ?req dbx:requestedBy ?p ;
+       dbx:requestedAction ?a ;
+       dbx:requestedResource ?r .
+
+  ?r dbx:hasPermission ?perm .
+  ?perm dbx:principal ?p ;
+        dbx:role ?role .
+  ?role dbx:permits ?a .
+} => { ?req dbx:decision dbx:Allowed . } .
+
+# Default deny
+{
+  ?req a dbx:AccessRequest .
+  not { ?req dbx:decision ?d . }
+} => { ?req dbx:decision dbx:Denied . } .

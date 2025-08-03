@@ -1,0 +1,30 @@
+@prefix gdrive: <https://www.w3.org/ns/auth/gdrive#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+###################################################################
+#  Simplified inference rules for Google Drive permissions        #
+###################################################################
+
+# A request pattern ------------------------------------------------
+# ?req  gdrive:requestedBy       ?principal ;
+#       gdrive:requestedAction   ?action ;
+#       gdrive:requestedResource ?resource .
+# ------------------------------------------------------------------
+
+# Rule 1 – allow if a matching permission’s role allows the action --
+{
+  ?req  gdrive:requestedBy       ?p ;
+        gdrive:requestedAction   ?a ;
+        gdrive:requestedResource ?r .
+
+  ?r    gdrive:hasPermission ?perm .
+  ?perm gdrive:principal ?p ;
+        gdrive:role      ?role .
+  ?role gdrive:permits   ?a .
+} => { ?req gdrive:decision gdrive:Allowed . } .
+
+# Rule 2 – default deny -------------------------------------------
+{
+  ?req a gdrive:AccessRequest .
+  not { ?req gdrive:decision ?d . }
+} => { ?req gdrive:decision gdrive:Denied . } .
