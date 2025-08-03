@@ -1,0 +1,284 @@
+@prefix rabac: <https://www.w3.org/ns/auth/rabac#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix rbac: <https://www.w3.org/ns/auth/rbac#> .
+@prefix abac: <https://www.w3.org/ns/auth/abac#> .
+
+# RABAC (Role and Attribute-Based Access Control) Vocabulary
+# This vocabulary combines RBAC and ABAC concepts for hybrid access control systems
+
+#################################################################
+# Core Classes
+#################################################################
+
+rabac:Subject a rdfs:Class ;
+    rdfs:label "Subject"@en ;
+    rdfs:comment """A subject in RABAC can have both roles and attributes.
+    This allows for both coarse-grained (role-based) and fine-grained (attribute-based) access control."""@en ;
+    rdfs:subClassOf foaf:Agent .
+
+rabac:Role a rdfs:Class ;
+    rdfs:label "Role"@en ;
+    rdfs:comment """A role that can have both permissions and attribute constraints.
+    Roles can be activated based on attribute conditions."""@en ;
+    rdfs:subClassOf rbac:Role .
+
+rabac:Permission a rdfs:Class ;
+    rdfs:label "Permission"@en ;
+    rdfs:comment """A permission that can include both role-based and attribute-based constraints."""@en .
+
+rabac:Resource a rdfs:Class ;
+    rdfs:label "Resource"@en ;
+    rdfs:comment "A resource that can be accessed based on both roles and attributes."@en .
+
+rabac:AttributeConstraint a rdfs:Class ;
+    rdfs:label "Attribute Constraint"@en ;
+    rdfs:comment """A constraint that must be satisfied based on attribute values.
+    Can be applied to roles, permissions, or resources."""@en .
+
+rabac:RoleActivationCondition a rdfs:Class ;
+    rdfs:label "Role Activation Condition"@en ;
+    rdfs:comment """Conditions based on attributes that must be met for a role to be activated."""@en ;
+    rdfs:subClassOf rabac:AttributeConstraint .
+
+rabac:PermissionConstraint a rdfs:Class ;
+    rdfs:label "Permission Constraint"@en ;
+    rdfs:comment """Additional attribute-based constraints on permissions beyond role assignment."""@en ;
+    rdfs:subClassOf rabac:AttributeConstraint .
+
+rabac:Context a rdfs:Class ;
+    rdfs:label "Context"@en ;
+    rdfs:comment """The context combines environmental attributes with role information
+    for making access decisions."""@en .
+
+rabac:Policy a rdfs:Class ;
+    rdfs:label "Policy"@en ;
+    rdfs:comment """A policy that can evaluate both role assignments and attribute conditions."""@en .
+
+rabac:Session a rdfs:Class ;
+    rdfs:label "Session"@en ;
+    rdfs:comment """A session that tracks both active roles and current attribute values."""@en .
+
+rabac:DynamicRole a rdfs:Class ;
+    rdfs:label "Dynamic Role"@en ;
+    rdfs:comment """A role that is assigned dynamically based on attribute conditions."""@en ;
+    rdfs:subClassOf rabac:Role .
+
+rabac:AttributeBasedPermission a rdfs:Class ;
+    rdfs:label "Attribute-Based Permission"@en ;
+    rdfs:comment """A permission that is granted based on attribute evaluation
+    in addition to role membership."""@en ;
+    rdfs:subClassOf rabac:Permission .
+
+#################################################################
+# Attribute Classes
+#################################################################
+
+rabac:Attribute a rdfs:Class ;
+    rdfs:label "Attribute"@en ;
+    rdfs:comment "An attribute that can be associated with subjects, resources, or context."@en ;
+    rdfs:subClassOf abac:Attribute .
+
+rabac:SubjectAttribute a rdfs:Class ;
+    rdfs:label "Subject Attribute"@en ;
+    rdfs:comment "Attributes associated with subjects."@en ;
+    rdfs:subClassOf rabac:Attribute .
+
+rabac:ResourceAttribute a rdfs:Class ;
+    rdfs:label "Resource Attribute"@en ;
+    rdfs:comment "Attributes associated with resources."@en ;
+    rdfs:subClassOf rabac:Attribute .
+
+rabac:ContextAttribute a rdfs:Class ;
+    rdfs:label "Context Attribute"@en ;
+    rdfs:comment "Attributes associated with the access context."@en ;
+    rdfs:subClassOf rabac:Attribute .
+
+#################################################################
+# Properties
+#################################################################
+
+# Role and Attribute Assignment
+rabac:hasRole a rdf:Property ;
+    rdfs:label "has role"@en ;
+    rdfs:comment "Associates a subject with a role (may be conditional)."@en ;
+    rdfs:domain rabac:Subject ;
+    rdfs:range rabac:Role .
+
+rabac:hasAttribute a rdf:Property ;
+    rdfs:label "has attribute"@en ;
+    rdfs:comment "Associates an entity with an attribute."@en ;
+    rdfs:range rabac:Attribute .
+
+rabac:roleCondition a rdf:Property ;
+    rdfs:label "role condition"@en ;
+    rdfs:comment "Attribute conditions for role activation."@en ;
+    rdfs:domain rabac:Role ;
+    rdfs:range rabac:RoleActivationCondition .
+
+rabac:permissionCondition a rdf:Property ;
+    rdfs:label "permission condition"@en ;
+    rdfs:comment "Attribute conditions for permission usage."@en ;
+    rdfs:domain rabac:Permission ;
+    rdfs:range rabac:PermissionConstraint .
+
+# Constraint Properties
+rabac:constraintExpression a rdf:Property ;
+    rdfs:label "constraint expression"@en ;
+    rdfs:comment "The logical expression defining the constraint."@en ;
+    rdfs:domain rabac:AttributeConstraint ;
+    rdfs:range xsd:string .
+
+rabac:requiredAttribute a rdf:Property ;
+    rdfs:label "required attribute"@en ;
+    rdfs:comment "Attributes required for constraint evaluation."@en ;
+    rdfs:domain rabac:AttributeConstraint ;
+    rdfs:range rabac:Attribute .
+
+rabac:operator a rdf:Property ;
+    rdfs:label "operator"@en ;
+    rdfs:comment "The comparison operator used in the constraint."@en ;
+    rdfs:domain rabac:AttributeConstraint ;
+    rdfs:range xsd:string .
+
+rabac:value a rdf:Property ;
+    rdfs:label "value"@en ;
+    rdfs:comment "The value to compare against in the constraint."@en ;
+    rdfs:domain rabac:AttributeConstraint .
+
+# Session Properties
+rabac:sessionSubject a rdf:Property ;
+    rdfs:label "session subject"@en ;
+    rdfs:comment "The subject associated with the session."@en ;
+    rdfs:domain rabac:Session ;
+    rdfs:range rabac:Subject .
+
+rabac:activeRole a rdf:Property ;
+    rdfs:label "active role"@en ;
+    rdfs:comment "Roles currently active in the session."@en ;
+    rdfs:domain rabac:Session ;
+    rdfs:range rabac:Role .
+
+rabac:sessionContext a rdf:Property ;
+    rdfs:label "session context"@en ;
+    rdfs:comment "The context of the current session."@en ;
+    rdfs:domain rabac:Session ;
+    rdfs:range rabac:Context .
+
+rabac:sessionAttribute a rdf:Property ;
+    rdfs:label "session attribute"@en ;
+    rdfs:comment "Current attribute values in the session."@en ;
+    rdfs:domain rabac:Session ;
+    rdfs:range rabac:Attribute .
+
+# Permission Properties
+rabac:hasPermission a rdf:Property ;
+    rdfs:label "has permission"@en ;
+    rdfs:comment "Associates a role with permissions (may be conditional)."@en ;
+    rdfs:domain rabac:Role ;
+    rdfs:range rabac:Permission .
+
+rabac:onResource a rdf:Property ;
+    rdfs:label "on resource"@en ;
+    rdfs:comment "The resource a permission applies to."@en ;
+    rdfs:domain rabac:Permission ;
+    rdfs:range rabac:Resource .
+
+rabac:operation a rdf:Property ;
+    rdfs:label "operation"@en ;
+    rdfs:comment "The operation allowed by the permission."@en ;
+    rdfs:domain rabac:Permission ;
+    rdfs:range xsd:string .
+
+# Policy Properties
+rabac:hasPolicy a rdf:Property ;
+    rdfs:label "has policy"@en ;
+    rdfs:comment "Associates an entity with a policy."@en ;
+    rdfs:range rabac:Policy .
+
+rabac:policyType a rdf:Property ;
+    rdfs:label "policy type"@en ;
+    rdfs:comment "Whether the policy is role-based, attribute-based, or hybrid."@en ;
+    rdfs:domain rabac:Policy ;
+    rdfs:range xsd:string .
+
+rabac:combiningAlgorithm a rdf:Property ;
+    rdfs:label "combining algorithm"@en ;
+    rdfs:comment "How to combine role and attribute decisions."@en ;
+    rdfs:domain rabac:Policy ;
+    rdfs:range xsd:string .
+
+# Dynamic Role Properties
+rabac:activationRule a rdf:Property ;
+    rdfs:label "activation rule"@en ;
+    rdfs:comment "Rule for dynamic role activation based on attributes."@en ;
+    rdfs:domain rabac:DynamicRole ;
+    rdfs:range rabac:AttributeConstraint .
+
+rabac:deactivationRule a rdf:Property ;
+    rdfs:label "deactivation rule"@en ;
+    rdfs:comment "Rule for automatic role deactivation."@en ;
+    rdfs:domain rabac:DynamicRole ;
+    rdfs:range rabac:AttributeConstraint .
+
+# Temporal Properties
+rabac:validFrom a rdf:Property ;
+    rdfs:label "valid from"@en ;
+    rdfs:comment "Start time for validity."@en ;
+    rdfs:range xsd:dateTime .
+
+rabac:validUntil a rdf:Property ;
+    rdfs:label "valid until"@en ;
+    rdfs:comment "End time for validity."@en ;
+    rdfs:range xsd:dateTime .
+
+#################################################################
+# Common Attributes
+#################################################################
+
+rabac:department a rabac:SubjectAttribute ;
+    rdfs:label "Department"@en ;
+    rdfs:comment "The department of the subject."@en .
+
+rabac:clearanceLevel a rabac:SubjectAttribute ;
+    rdfs:label "Clearance Level"@en ;
+    rdfs:comment "Security clearance level."@en .
+
+rabac:location a rabac:ContextAttribute ;
+    rdfs:label "Location"@en ;
+    rdfs:comment "Physical or network location."@en .
+
+rabac:timeOfDay a rabac:ContextAttribute ;
+    rdfs:label "Time of Day"@en ;
+    rdfs:comment "Current time of day."@en .
+
+rabac:sensitivity a rabac:ResourceAttribute ;
+    rdfs:label "Sensitivity"@en ;
+    rdfs:comment "Sensitivity level of the resource."@en .
+
+rabac:owner a rabac:ResourceAttribute ;
+    rdfs:label "Owner"@en ;
+    rdfs:comment "Owner of the resource."@en .
+
+#################################################################
+# Common Operations
+#################################################################
+
+rabac:Read a xsd:string ;
+    rdfs:label "Read"@en ;
+    rdfs:comment "Read operation."@en .
+
+rabac:Write a xsd:string ;
+    rdfs:label "Write"@en ;
+    rdfs:comment "Write operation."@en .
+
+rabac:Delete a xsd:string ;
+    rdfs:label "Delete"@en ;
+    rdfs:comment "Delete operation."@en .
+
+rabac:Execute a xsd:string ;
+    rdfs:label "Execute"@en ;
+    rdfs:comment "Execute operation."@en .

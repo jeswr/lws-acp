@@ -1,0 +1,366 @@
+@prefix rabac: <https://www.w3.org/ns/auth/rabac#> .
+@prefix rbac: <https://www.w3.org/ns/auth/rbac#> .
+@prefix abac: <https://www.w3.org/ns/auth/abac#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+#################################################################
+# RABAC Inference Rules
+# These rules implement hybrid Role and Attribute-Based Access Control
+#################################################################
+
+### Request Pattern ###################################################
+# An access request SHALL be described using:
+#   ?request rabac:requestSubject ?subject ;
+#           rabac:requestResource ?resource ;
+#           rabac:requestOperation ?operation ;
+#           rabac:requestContext ?context .
+######################################################################
+
+# Rule 1: Basic Role-based Access with Attribute Constraints
+{
+    ?request rabac:requestSubject ?subject ;
+             rabac:requestResource ?resource ;
+             rabac:requestOperation ?operation .
+    
+    ?subject rabac:hasRole ?role .
+    ?role rabac:hasPermission ?permission .
+    ?permission rabac:onResource ?resource ;
+                rabac:operation ?operation .
+    
+    # Check role activation conditions
+    ?role rabac:roleCondition ?condition .
+    ?condition rabac:evaluatesTo true .
+} => {
+    ?request rabac:decision rabac:Permit ;
+             rabac:reason "Role-based access with satisfied attribute conditions" .
+} .
+
+# Rule 2: Dynamic Role Activation based on Attributes
+{
+    ?subject rabac:hasAttribute ?attr .
+    ?dynamicRole a rabac:DynamicRole ;
+                 rabac:activationRule ?rule .
+    
+    ?rule rabac:requiredAttribute ?reqAttr ;
+          rabac:operator ?op ;
+          rabac:value ?value .
+    
+    ?attr rabac:attributeName ?name ;
+          rabac:attributeValue ?actualValue .
+    ?reqAttr rabac:attributeName ?name .
+    
+    # Evaluate attribute condition
+    (?actualValue ?op ?value) log:query true .
+} => {
+    ?subject rabac:hasRole ?dynamicRole ;
+             rabac:roleActivation "dynamic" .
+} .
+
+# Rule 3: Permission with Additional Attribute Constraints
+{
+    ?request rabac:requestSubject ?subject ;
+             rabac:requestResource ?resource ;
+             rabac:requestOperation ?operation ;
+             rabac:requestContext ?context .
+    
+    ?subject rabac:hasRole ?role .
+    ?role rabac:hasPermission ?permission .
+    ?permission rabac:onResource ?resource ;
+                rabac:operation ?operation ;
+                rabac:permissionCondition ?condition .
+    
+    # Evaluate permission-specific attribute constraints
+    ?condition rabac:evaluatesTo true .
+} => {
+    ?request rabac:decision rabac:Permit ;
+             rabac:reason "Permission granted with attribute constraints satisfied" .
+} .
+
+# Rule 4: Context-aware Role Activation
+{
+    ?session rabac:sessionSubject ?subject ;
+             rabac:sessionContext ?context .
+    
+    ?role rabac:roleCondition ?condition .
+    ?condition a rabac:RoleActivationCondition ;
+               rabac:contextAttribute ?ctxAttr .
+    
+    ?context rabac:hasAttribute ?attr .
+    ?attr rabac:attributeName ?name ;
+          rabac:attributeValue ?value .
+    ?ctxAttr rabac:attributeName ?name ;
+             rabac:requiredValue ?reqValue .
+    
+    ?value log:equalTo ?reqValue .
+} => {
+    ?session rabac:activeRole ?role .
+} .
+
+# Rule 5: Attribute-based Permission Enhancement
+{
+    ?subject rabac:hasRole ?role ;
+             rabac:hasAttribute ?subjAttr .
+    ?resource rabac:hasAttribute ?resAttr .
+    
+    ?policy a rabac:Policy ;
+            rabac:policyType "attribute-enhanced" ;
+            rabac:baseRole ?role ;
+            rabac:attributeRule ?rule .
+    
+    ?rule rabac:subjectAttribute ?subjAttrName ;
+          rabac:resourceAttribute ?resAttrName ;
+          rabac:relationship ?rel .
+    
+    ?subjAttr rabac:attributeName ?subjAttrName ;
+              rabac:attributeValue ?subjValue .
+    ?resAttr rabac:attributeName ?resAttrName ;
+             rabac:attributeValue ?resValue .
+    
+    (?subjValue ?rel ?resValue) log:query true .
+} => {
+    ?subject rabac:enhancedPermission true .
+} .
+
+# Rule 6: Time-based Role Activation
+{
+    ?subject rabac:hasRole ?role .
+    ?role rabac:validFrom ?from ;
+          rabac:validUntil ?until .
+    
+    ?context rabac:hasAttribute ?timeAttr .
+    ?timeAttr rabac:attributeName "currentTime" ;
+              rabac:attributeValue ?now .
+    
+    ?now math:greaterThan ?from .
+    ?now math:lessThan ?until .
+} => {
+    ?role rabac:temporallyValid true .
+} .
+
+# Rule 7: Location-based Permission Constraint
+{
+    ?request rabac:requestSubject ?subject ;
+             rabac:requestResource ?resource ;
+             rabac:requestContext ?context .
+    
+    ?subject rabac:hasRole ?role .
+    ?role rabac:hasPermission ?permission .
+    ?permission rabac:permissionCondition ?locCondition .
+    
+    ?locCondition a rabac:LocationConstraint ;
+                  rabac:allowedLocation ?allowed .
+    
+    ?context rabac:hasAttribute ?locAttr .
+    ?locAttr rabac:attributeName "location" ;
+             rabac:attributeValue ?current .
+    
+    ?current rabac:within ?allowed .
+} => {
+    ?permission rabac:locationSatisfied true .
+} .
+
+# Rule 8: Department-based Resource Access
+{
+    ?request rabac:requestSubject ?subject ;
+             rabac:requestResource ?resource .
+    
+    ?subject rabac:hasAttribute ?subjDept .
+    ?subjDept rabac:attributeName "department" ;
+              rabac:attributeValue ?dept .
+    
+    ?resource rabac:hasAttribute ?resDept .
+    ?resDept rabac:attributeName "owner_department" ;
+             rabac:attributeValue ?dept .
+} => {
+    ?request rabac:departmentMatch true .
+} .
+
+# Rule 9: Clearance Level Check
+{
+    ?request rabac:requestSubject ?subject ;
+             rabac:requestResource ?resource .
+    
+    ?subject rabac:hasAttribute ?subjClear .
+    ?subjClear rabac:attributeName "clearanceLevel" ;
+               rabac:attributeValue ?subjLevel .
+    
+    ?resource rabac:hasAttribute ?resSens .
+    ?resSens rabac:attributeName "sensitivity" ;
+             rabac:attributeValue ?resLevel .
+    
+    ?subjLevel math:greaterThanOrEqualTo ?resLevel .
+} => {
+    ?request rabac:clearanceSatisfied true .
+} .
+
+# Rule 10: Combined Role and Attribute Decision
+{
+    ?request rabac:requestSubject ?subject ;
+             rabac:requestResource ?resource ;
+             rabac:requestOperation ?operation .
+    
+    # Role-based check
+    ?subject rabac:hasRole ?role .
+    ?role rabac:hasPermission ?permission .
+    ?permission rabac:onResource ?resource ;
+                rabac:operation ?operation .
+    
+    # Additional attribute checks
+    ?request rabac:departmentMatch true .
+    ?request rabac:clearanceSatisfied true .
+} => {
+    ?request rabac:decision rabac:Permit ;
+             rabac:reason "Both role and attribute requirements satisfied" .
+} .
+
+# Rule 11: Role Hierarchy with Attribute Inheritance
+{
+    ?seniorRole rabac:inheritsFrom ?juniorRole .
+    ?juniorRole rabac:hasPermission ?permission .
+    ?permission rabac:permissionCondition ?condition .
+    
+    # Senior roles inherit permissions but may have additional constraints
+    ?seniorRole rabac:additionalConstraint ?addConstraint .
+} => {
+    ?seniorRole rabac:hasPermission [
+        rabac:inheritedFrom ?permission ;
+        rabac:permissionCondition ?condition ;
+        rabac:additionalCondition ?addConstraint
+    ] .
+} .
+
+# Rule 12: Session-based Attribute Tracking
+{
+    ?session rabac:sessionSubject ?subject ;
+             rabac:sessionContext ?context .
+    
+    ?context rabac:hasAttribute ?attr .
+    ?attr rabac:attributeName ?name ;
+          rabac:attributeValue ?value ;
+          rabac:validityPeriod ?period .
+    
+    ?now a rabac:CurrentTime .
+    ?now rabac:within ?period .
+} => {
+    ?session rabac:sessionAttribute ?attr .
+} .
+
+# Rule 13: Policy Conflict Resolution - Attribute Priority
+{
+    ?policy1 rabac:hasRule ?rule1 .
+    ?policy2 rabac:hasRule ?rule2 .
+    
+    ?rule1 rabac:decision rabac:Permit ;
+           rabac:priority ?p1 .
+    ?rule2 rabac:decision rabac:Deny ;
+           rabac:priority ?p2 .
+    
+    ?p2 math:greaterThan ?p1 .
+} => {
+    ?request rabac:decision rabac:Deny ;
+             rabac:reason "Higher priority deny rule" .
+} .
+
+# Rule 14: Obligation Enforcement
+{
+    ?request rabac:decision rabac:Permit .
+    ?permission rabac:hasObligation ?obligation .
+    
+    ?obligation rabac:type "audit" ;
+                rabac:action "log_access" .
+} => {
+    ?request rabac:mustFulfill ?obligation .
+} .
+
+# Rule 15: Emergency Override
+{
+    ?request rabac:requestSubject ?subject ;
+             rabac:requestContext ?context .
+    
+    ?context rabac:hasAttribute ?emergency .
+    ?emergency rabac:attributeName "emergencyOverride" ;
+               rabac:attributeValue true .
+    
+    ?subject rabac:hasRole ?role .
+    ?role rabac:canUseEmergencyOverride true .
+} => {
+    ?request rabac:decision rabac:Permit ;
+             rabac:reason "Emergency override activated" ;
+             rabac:mustFulfill [
+                 rabac:type "audit" ;
+                 rabac:action "log_emergency_access"
+             ] .
+} .
+
+# Rule 16: Delegation with Attribute Constraints
+{
+    ?delegator rabac:hasRole ?role ;
+               rabac:delegates ?permission ;
+               rabac:to ?delegatee ;
+               rabac:withConstraints ?constraints .
+    
+    ?delegatee rabac:hasAttribute ?attr .
+    ?constraints rabac:requiredAttribute ?reqAttr .
+    
+    ?attr rabac:matches ?reqAttr .
+} => {
+    ?delegatee rabac:hasPermission ?permission ;
+               rabac:delegatedBy ?delegator .
+} .
+
+# Rule 17: Cross-Domain Access
+{
+    ?subject rabac:domain ?domain1 .
+    ?resource rabac:domain ?domain2 .
+    
+    ?domain1 rabac:trusts ?domain2 .
+    ?subject rabac:hasRole ?role .
+    ?role rabac:crossDomainEnabled true .
+} => {
+    ?subject rabac:canAccess ?resource ;
+             rabac:accessType "cross-domain" .
+} .
+
+# Rule 18: Risk-based Access Decision
+{
+    ?request rabac:requestSubject ?subject ;
+             rabac:requestResource ?resource ;
+             rabac:requestContext ?context .
+    
+    ?context rabac:riskScore ?score .
+    ?resource rabac:maxAcceptableRisk ?maxRisk .
+    
+    ?score math:lessThanOrEqualTo ?maxRisk .
+} => {
+    ?request rabac:riskAcceptable true .
+} .
+
+# Rule 19: Attribute Change Propagation
+{
+    ?subject rabac:hasAttribute ?oldAttr .
+    ?oldAttr rabac:attributeName ?name ;
+             rabac:attributeValue ?oldValue ;
+             rabac:updatedTo ?newValue .
+    
+    ?role rabac:roleCondition ?condition .
+    ?condition rabac:dependsOn ?name .
+} => {
+    ?subject rabac:requiresRoleRevalidation ?role .
+} .
+
+# Rule 20: Default Deny with Reason
+{
+    ?request rabac:requestSubject ?subject ;
+             rabac:requestResource ?resource ;
+             rabac:requestOperation ?operation .
+    
+    ?request log:notIncludes {?request rabac:decision rabac:Permit} .
+} => {
+    ?request rabac:decision rabac:Deny ;
+             rabac:reason "No matching role or unsatisfied attribute constraints" .
+} .

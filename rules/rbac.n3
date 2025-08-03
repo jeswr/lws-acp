@@ -1,0 +1,181 @@
+@prefix rbac: <https://www.w3.org/ns/auth/rbac#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# RBAC Inference Rules
+# These rules implement the core semantics of Role-Based Access Control
+#################################################################
+
+### Request Pattern ###################################################
+# An access request SHALL be described using:
+#   ?request rbac:requestedBy ?user ;
+#           rbac:requestedOperation ?operation ;
+#           rbac:requestedObject ?object .
+######################################################################
+
+# Rule 1: Basic Permission Check - User has permission through role
+{
+    ?request rbac:requestedBy ?user ;
+             rbac:requestedOperation ?operation ;
+             rbac:requestedObject ?object .
+    
+    ?user rbac:hasRole ?role .
+    ?role rbac:hasPermission ?permission .
+    ?permission rbac:onOperation ?operation ;
+                rbac:onObject ?object .
+} => {
+    ?request rbac:decision rbac:Permit ;
+             rbac:reason "User has required permission through assigned role" .
+} .
+
+# Rule 2: Role Hierarchy - Inherit permissions from junior roles
+{
+    ?user rbac:hasRole ?seniorRole .
+    ?seniorRole rbac:inheritsFrom ?juniorRole .
+    ?juniorRole rbac:hasPermission ?permission .
+} => {
+    ?seniorRole rbac:hasPermission ?permission .
+} .
+
+# Rule 3: Transitive Role Inheritance
+{
+    ?role1 rbac:inheritsFrom ?role2 .
+    ?role2 rbac:inheritsFrom ?role3 .
+} => {
+    ?role1 rbac:inheritsFrom ?role3 .
+} .
+
+# Rule 4: Session-based Access - Check active roles in session
+{
+    ?request rbac:requestedBy ?user ;
+             rbac:requestedOperation ?operation ;
+             rbac:requestedObject ?object ;
+             rbac:inSession ?session .
+    
+    ?session rbac:sessionUser ?user ;
+             rbac:activeRole ?role .
+    ?role rbac:hasPermission ?permission .
+    ?permission rbac:onOperation ?operation ;
+                rbac:onObject ?object .
+} => {
+    ?request rbac:decision rbac:Permit ;
+             rbac:reason "User has permission through active role in session" .
+} .
+
+# Rule 5: Static Separation of Duty - Prevent conflicting role assignment
+{
+    ?user rbac:hasRole ?role1 .
+    ?user rbac:hasRole ?role2 .
+    ?ssd a rbac:StaticSeparationOfDuty ;
+         rbac:conflictingRoles ?role1 ;
+         rbac:conflictingRoles ?role2 .
+    ?role1 log:notEqualTo ?role2 .
+} => {
+    ?user rbac:violatesConstraint ?ssd ;
+          rbac:constraintViolation "Static separation of duty violation" .
+} .
+
+# Rule 6: Dynamic Separation of Duty - Prevent conflicting role activation
+{
+    ?session rbac:sessionUser ?user ;
+             rbac:activeRole ?role1 ;
+             rbac:activeRole ?role2 .
+    ?dsd a rbac:DynamicSeparationOfDuty ;
+         rbac:conflictingRoles ?role1 ;
+         rbac:conflictingRoles ?role2 .
+    ?role1 log:notEqualTo ?role2 .
+} => {
+    ?session rbac:violatesConstraint ?dsd ;
+             rbac:constraintViolation "Dynamic separation of duty violation" .
+} .
+
+# Rule 7: Maximum Active Roles Constraint
+{
+    ?user rbac:maxActiveRoles ?max .
+    ?session rbac:sessionUser ?user .
+    (?role {?session rbac:activeRole ?role} ?roles) log:collectAllIn ?scope .
+    ?roles log:length ?count .
+    ?count log:greaterThan ?max .
+} => {
+    ?session rbac:constraintViolation "Maximum active roles exceeded" .
+} .
+
+# Rule 8: Role Cardinality Constraint
+{
+    ?role rbac:roleCardinality ?max .
+    (?user {?user rbac:hasRole ?role} ?users) log:collectAllIn ?scope .
+    ?users log:length ?count .
+    ?count log:greaterThan ?max .
+} => {
+    ?role rbac:constraintViolation "Role cardinality exceeded" .
+} .
+
+# Rule 9: Temporal Validity Check for Role Assignment
+{
+    ?user rbac:hasRole ?role .
+    ?assignment rbac:subject ?user ;
+                rbac:role ?role ;
+                rbac:validFrom ?from ;
+                rbac:validUntil ?until .
+    ?now a rbac:CurrentTime .
+    ?now log:lessThan ?from .
+} => {
+    ?assignment rbac:invalid true ;
+                rbac:reason "Role assignment not yet valid" .
+} .
+
+{
+    ?user rbac:hasRole ?role .
+    ?assignment rbac:subject ?user ;
+                rbac:role ?role ;
+                rbac:validFrom ?from ;
+                rbac:validUntil ?until .
+    ?now a rbac:CurrentTime .
+    ?now log:greaterThan ?until .
+} => {
+    ?assignment rbac:invalid true ;
+                rbac:reason "Role assignment expired" .
+} .
+
+# Rule 10: Administrative Role Permission Check
+{
+    ?admin rbac:hasRole ?adminRole .
+    ?adminRole rbac:canAssign ?targetRole .
+    ?request a rbac:RoleAssignmentRequest ;
+             rbac:requestedBy ?admin ;
+             rbac:assignRole ?targetRole ;
+             rbac:toUser ?targetUser .
+} => {
+    ?request rbac:decision rbac:Permit ;
+             rbac:reason "Administrator has permission to assign role" .
+} .
+
+# Rule 11: Wildcard Object Permissions
+{
+    ?request rbac:requestedBy ?user ;
+             rbac:requestedOperation ?operation ;
+             rbac:requestedObject ?object .
+    
+    ?user rbac:hasRole ?role .
+    ?role rbac:hasPermission ?permission .
+    ?permission rbac:onOperation ?operation ;
+                rbac:onObject rbac:AllObjects .
+} => {
+    ?request rbac:decision rbac:Permit ;
+             rbac:reason "User has wildcard permission for operation" .
+} .
+
+# Rule 12: Default Deny - If no permit rule fires, deny access
+{
+    ?request rbac:requestedBy ?user ;
+             rbac:requestedOperation ?operation ;
+             rbac:requestedObject ?object .
+    
+    ?request log:notIncludes {?request rbac:decision rbac:Permit} .
+} => {
+    ?request rbac:decision rbac:Deny ;
+             rbac:reason "No matching permission found" .
+} .

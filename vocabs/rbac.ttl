@@ -1,0 +1,198 @@
+@prefix rbac: <https://www.w3.org/ns/auth/rbac#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+# RBAC (Role-Based Access Control) Vocabulary
+# This vocabulary defines terms for implementing role-based access control systems
+
+#################################################################
+# Core Classes
+#################################################################
+
+rbac:Role a rdfs:Class ;
+    rdfs:label "Role"@en ;
+    rdfs:comment """A role represents a collection of permissions that can be assigned to users. 
+    Roles typically correspond to job functions or responsibilities within an organization."""@en .
+
+rbac:Permission a rdfs:Class ;
+    rdfs:label "Permission"@en ;
+    rdfs:comment """A permission represents an approval to perform an operation on one or more objects.
+    Permissions are the building blocks of access control decisions."""@en .
+
+rbac:User a rdfs:Class ;
+    rdfs:label "User"@en ;
+    rdfs:comment "A user is an individual or system entity that can be assigned roles."@en ;
+    rdfs:subClassOf foaf:Agent .
+
+rbac:Session a rdfs:Class ;
+    rdfs:label "Session"@en ;
+    rdfs:comment """A session represents an active instance of a user exercising permissions 
+    through their assigned roles."""@en .
+
+rbac:Operation a rdfs:Class ;
+    rdfs:label "Operation"@en ;
+    rdfs:comment "An operation is a specific action that can be performed on a resource."@en .
+
+rbac:Object a rdfs:Class ;
+    rdfs:label "Object"@en ;
+    rdfs:comment "An object is a resource or entity that can be accessed or manipulated."@en .
+
+rbac:RoleHierarchy a rdfs:Class ;
+    rdfs:label "Role Hierarchy"@en ;
+    rdfs:comment "Represents a hierarchical relationship between roles where senior roles inherit permissions from junior roles."@en .
+
+rbac:Constraint a rdfs:Class ;
+    rdfs:label "Constraint"@en ;
+    rdfs:comment "A constraint represents a restriction on role assignments or activations."@en .
+
+rbac:SeparationOfDuty a rdfs:Class ;
+    rdfs:label "Separation of Duty"@en ;
+    rdfs:comment "A constraint that prevents conflicting roles from being assigned to or activated by the same user."@en ;
+    rdfs:subClassOf rbac:Constraint .
+
+rbac:StaticSeparationOfDuty a rdfs:Class ;
+    rdfs:label "Static Separation of Duty"@en ;
+    rdfs:comment "Constraint preventing a user from being assigned to conflicting roles."@en ;
+    rdfs:subClassOf rbac:SeparationOfDuty .
+
+rbac:DynamicSeparationOfDuty a rdfs:Class ;
+    rdfs:label "Dynamic Separation of Duty"@en ;
+    rdfs:comment "Constraint preventing a user from activating conflicting roles within the same session."@en ;
+    rdfs:subClassOf rbac:SeparationOfDuty .
+
+#################################################################
+# Properties
+#################################################################
+
+# User-Role Assignment
+rbac:hasRole a rdf:Property ;
+    rdfs:label "has role"@en ;
+    rdfs:comment "Associates a user with a role."@en ;
+    rdfs:domain rbac:User ;
+    rdfs:range rbac:Role .
+
+# Permission-Role Assignment
+rbac:hasPermission a rdf:Property ;
+    rdfs:label "has permission"@en ;
+    rdfs:comment "Associates a role with a permission."@en ;
+    rdfs:domain rbac:Role ;
+    rdfs:range rbac:Permission .
+
+# Permission Components
+rbac:onOperation a rdf:Property ;
+    rdfs:label "on operation"@en ;
+    rdfs:comment "Specifies the operation component of a permission."@en ;
+    rdfs:domain rbac:Permission ;
+    rdfs:range rbac:Operation .
+
+rbac:onObject a rdf:Property ;
+    rdfs:label "on object"@en ;
+    rdfs:comment "Specifies the object component of a permission."@en ;
+    rdfs:domain rbac:Permission ;
+    rdfs:range rbac:Object .
+
+# Session Properties
+rbac:sessionUser a rdf:Property ;
+    rdfs:label "session user"@en ;
+    rdfs:comment "Associates a session with its user."@en ;
+    rdfs:domain rbac:Session ;
+    rdfs:range rbac:User .
+
+rbac:activeRole a rdf:Property ;
+    rdfs:label "active role"@en ;
+    rdfs:comment "Specifies roles that are active in a session."@en ;
+    rdfs:domain rbac:Session ;
+    rdfs:range rbac:Role .
+
+# Role Hierarchy
+rbac:seniorRole a rdf:Property ;
+    rdfs:label "senior role"@en ;
+    rdfs:comment "Specifies the senior role in a role hierarchy relationship."@en ;
+    rdfs:domain rbac:RoleHierarchy ;
+    rdfs:range rbac:Role .
+
+rbac:juniorRole a rdf:Property ;
+    rdfs:label "junior role"@en ;
+    rdfs:comment "Specifies the junior role in a role hierarchy relationship."@en ;
+    rdfs:domain rbac:RoleHierarchy ;
+    rdfs:range rbac:Role .
+
+rbac:inheritsFrom a rdf:Property ;
+    rdfs:label "inherits from"@en ;
+    rdfs:comment "Direct inheritance relationship between roles."@en ;
+    rdfs:domain rbac:Role ;
+    rdfs:range rbac:Role .
+
+# Constraints
+rbac:conflictingRoles a rdf:Property ;
+    rdfs:label "conflicting roles"@en ;
+    rdfs:comment "Specifies roles that conflict under a separation of duty constraint."@en ;
+    rdfs:domain rbac:SeparationOfDuty ;
+    rdfs:range rbac:Role .
+
+rbac:maxActiveRoles a rdf:Property ;
+    rdfs:label "maximum active roles"@en ;
+    rdfs:comment "Maximum number of roles a user can activate simultaneously."@en ;
+    rdfs:domain rbac:User ;
+    rdfs:range xsd:integer .
+
+rbac:roleCardinality a rdf:Property ;
+    rdfs:label "role cardinality"@en ;
+    rdfs:comment "Maximum number of users that can be assigned to this role."@en ;
+    rdfs:domain rbac:Role ;
+    rdfs:range xsd:integer .
+
+# Administrative Properties
+rbac:canAssign a rdf:Property ;
+    rdfs:label "can assign"@en ;
+    rdfs:comment "Specifies which roles an administrative role can assign."@en ;
+    rdfs:domain rbac:Role ;
+    rdfs:range rbac:Role .
+
+rbac:canRevoke a rdf:Property ;
+    rdfs:label "can revoke"@en ;
+    rdfs:comment "Specifies which roles an administrative role can revoke."@en ;
+    rdfs:domain rbac:Role ;
+    rdfs:range rbac:Role .
+
+# Temporal Properties
+rbac:validFrom a rdf:Property ;
+    rdfs:label "valid from"@en ;
+    rdfs:comment "Start time for role assignment validity."@en ;
+    rdfs:range xsd:dateTime .
+
+rbac:validUntil a rdf:Property ;
+    rdfs:label "valid until"@en ;
+    rdfs:comment "End time for role assignment validity."@en ;
+    rdfs:range xsd:dateTime .
+
+#################################################################
+# Common Operations
+#################################################################
+
+rbac:Read a rbac:Operation ;
+    rdfs:label "Read"@en ;
+    rdfs:comment "Operation to read or view a resource."@en .
+
+rbac:Write a rbac:Operation ;
+    rdfs:label "Write"@en ;
+    rdfs:comment "Operation to modify or update a resource."@en .
+
+rbac:Create a rbac:Operation ;
+    rdfs:label "Create"@en ;
+    rdfs:comment "Operation to create a new resource."@en .
+
+rbac:Delete a rbac:Operation ;
+    rdfs:label "Delete"@en ;
+    rdfs:comment "Operation to remove a resource."@en .
+
+rbac:Execute a rbac:Operation ;
+    rdfs:label "Execute"@en ;
+    rdfs:comment "Operation to execute or run a resource."@en .
+
+rbac:Approve a rbac:Operation ;
+    rdfs:label "Approve"@en ;
+    rdfs:comment "Operation to approve an action or request."@en .
