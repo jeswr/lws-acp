@@ -1,0 +1,398 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix time: <http://www.w3.org/2000/10/swap/time#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix lws: <http://www.w3.org/ns/lws#> .
+@prefix : <http://www.w3.org/ns/lws/rules#> .
+
+# Linked Web Storage Access Control Evaluation Rules
+# These rules describe how LWS evaluates access control decisions
+
+#################################################################
+# Rule 1: Direct Authorization Grant
+# A request is allowed if there is a direct authorization that:
+# - Grants the requested mode to the principal
+# - Targets the requested resource
+# - Is currently valid (time-wise)
+# - Meets all conditions
+#################################################################
+
+{
+    ?request a lws:AccessRequest ;
+        lws:requestedBy ?principal ;
+        lws:requestsMode ?mode ;
+        lws:requestsResource ?resource ;
+        lws:requestTime ?time .
+    
+    ?auth a lws:Authorization ;
+        lws:grantedTo ?principal ;
+        lws:grants ?mode ;
+        lws:target ?resource .
+    
+    # Check temporal validity
+    ?auth :isTemporallyValid ?time .
+    
+    # Check conditions if any
+    ?auth :meetsAllConditions ?request .
+    
+} => {
+    ?request lws:decision lws:Allowed ;
+        lws:decidedBy ?auth ;
+        :reason "Direct authorization grant" .
+} .
+
+#################################################################
+# Rule 2: Group-based Authorization
+# A request is allowed if the principal is a member of a group
+# that has been granted access
+#################################################################
+
+{
+    ?request a lws:AccessRequest ;
+        lws:requestedBy ?principal ;
+        lws:requestsMode ?mode ;
+        lws:requestsResource ?resource ;
+        lws:requestTime ?time .
+    
+    ?principal lws:memberOf ?group .
+    
+    ?auth a lws:Authorization ;
+        lws:grantedTo ?group ;
+        lws:grants ?mode ;
+        lws:target ?resource .
+    
+    ?auth :isTemporallyValid ?time .
+    ?auth :meetsAllConditions ?request .
+    
+} => {
+    ?request lws:decision lws:Allowed ;
+        lws:decidedBy ?auth ;
+        :reason "Group membership authorization" .
+} .
+
+#################################################################
+# Rule 3: Inherited Authorization
+# A request is allowed if there is an authorization on a parent
+# resource that is marked as inheritable
+#################################################################
+
+{
+    ?request a lws:AccessRequest ;
+        lws:requestedBy ?principal ;
+        lws:requestsMode ?mode ;
+        lws:requestsResource ?resource ;
+        lws:requestTime ?time .
+    
+    ?resource lws:hasParent ?parent .
+    
+    ?auth a lws:Authorization ;
+        lws:grantedTo ?principal ;
+        lws:grants ?mode ;
+        lws:target ?parent ;
+        lws:inheritable true .
+    
+    ?auth :isTemporallyValid ?time .
+    ?auth :meetsAllConditions ?request .
+    
+} => {
+    ?request lws:decision lws:Allowed ;
+        lws:decidedBy ?auth ;
+        :reason "Inherited authorization from parent" .
+} .
+
+#################################################################
+# Rule 4: Authenticated Agent Authorization
+# Any authenticated agent gets access if authorized
+#################################################################
+
+{
+    ?request a lws:AccessRequest ;
+        lws:requestedBy ?principal ;
+        lws:requestsMode ?mode ;
+        lws:requestsResource ?resource ;
+        lws:requestTime ?time .
+    
+    ?principal a lws:User .  # Any authenticated user
+    
+    ?auth a lws:Authorization ;
+        lws:grantedTo lws:AuthenticatedAgent ;
+        lws:grants ?mode ;
+        lws:target ?resource .
+    
+    ?auth :isTemporallyValid ?time .
+    ?auth :meetsAllConditions ?request .
+    
+} => {
+    ?request lws:decision lws:Allowed ;
+        lws:decidedBy ?auth ;
+        :reason "Authenticated agent authorization" .
+} .
+
+#################################################################
+# Rule 5: Public Access
+# Anyone (including anonymous) gets access if authorized
+#################################################################
+
+{
+    ?request a lws:AccessRequest ;
+        lws:requestsMode ?mode ;
+        lws:requestsResource ?resource ;
+        lws:requestTime ?time .
+    
+    ?auth a lws:Authorization ;
+        lws:grantedTo lws:PublicAgent ;
+        lws:grants ?mode ;
+        lws:target ?resource .
+    
+    ?auth :isTemporallyValid ?time .
+    ?auth :meetsAllConditions ?request .
+    
+} => {
+    ?request lws:decision lws:Allowed ;
+        lws:decidedBy ?auth ;
+        :reason "Public access authorization" .
+} .
+
+#################################################################
+# Rule 6: Policy-based Authorization
+# A request is allowed if it satisfies a policy referenced by an auth
+#################################################################
+
+{
+    ?request a lws:AccessRequest ;
+        lws:requestedBy ?principal ;
+        lws:requestsMode ?mode ;
+        lws:requestsResource ?resource ;
+        lws:requestTime ?time .
+    
+    ?auth a lws:Authorization ;
+        lws:usePolicy ?policy ;
+        lws:target ?resource .
+    
+    ?policy a lws:Policy ;
+        lws:grants ?mode .
+    
+    # Check if principal matches policy requirements
+    ?principal :satisfiesPolicy ?policy .
+    
+    ?auth :isTemporallyValid ?time .
+    ?auth :meetsAllConditions ?request .
+    
+} => {
+    ?request lws:decision lws:Allowed ;
+        lws:decidedBy ?auth ;
+        :reason "Policy-based authorization" .
+} .
+
+#################################################################
+# Rule 7: Delegated Access
+# An application can access resources on behalf of a user
+#################################################################
+
+{
+    ?request a lws:AccessRequest ;
+        lws:requestedBy ?app ;
+        lws:requestsMode ?mode ;
+        lws:requestsResource ?resource ;
+        lws:requestTime ?time ;
+        lws:onBehalfOf ?user .
+    
+    ?app a lws:Application .
+    
+    ?auth a lws:Authorization ;
+        lws:grantedTo ?app ;
+        lws:grants ?mode ;
+        lws:target ?resource ;
+        lws:onBehalfOf ?user .
+    
+    # Check if requested scope matches granted scope
+    ?request lws:requestedScope ?reqScope .
+    ?auth lws:scope ?grantedScope .
+    ?reqScope :isSubsetOf ?grantedScope .
+    
+    ?auth :isTemporallyValid ?time .
+    ?auth :meetsAllConditions ?request .
+    
+} => {
+    ?request lws:decision lws:Allowed ;
+        lws:decidedBy ?auth ;
+        :reason "Delegated access authorization" .
+} .
+
+#################################################################
+# Helper Rules for Temporal Validity
+#################################################################
+
+# Authorization is temporally valid if current time is within bounds
+{
+    ?auth a lws:Authorization .
+    ?time a :CurrentTime .
+    
+    # Check validFrom if present
+    {
+        ?auth lws:validFrom ?from .
+        ?time :value ?timeValue .
+        ?from :value ?fromValue .
+        ?timeValue math:notLessThan ?fromValue .
+    } log:or {
+        ?auth log:notIncludes { ?auth lws:validFrom ?any } .
+    } .
+    
+    # Check validUntil if present
+    {
+        ?auth lws:validUntil ?until .
+        ?time :value ?timeValue .
+        ?until :value ?untilValue .
+        ?timeValue math:notGreaterThan ?untilValue .
+    } log:or {
+        ?auth log:notIncludes { ?auth lws:validUntil ?any } .
+    } .
+    
+} => {
+    ?auth :isTemporallyValid ?time .
+} .
+
+#################################################################
+# Helper Rules for Condition Checking
+#################################################################
+
+# Authorization meets all conditions if it has no conditions
+{
+    ?auth a lws:Authorization .
+    ?request a lws:AccessRequest .
+    
+    ?auth log:notIncludes { ?auth lws:condition ?any } .
+    
+} => {
+    ?auth :meetsAllConditions ?request .
+} .
+
+# Authorization meets all conditions if all conditions are satisfied
+{
+    ?auth a lws:Authorization ;
+        lws:condition ?condition .
+    ?request a lws:AccessRequest .
+    
+    # Check IP range condition
+    {
+        ?condition lws:ipRange ?range .
+        ?request lws:clientIP ?ip .
+        ?ip :inRange ?range .
+    } log:or {
+        ?condition log:notIncludes { ?condition lws:ipRange ?any } .
+    } .
+    
+    # Check time period condition
+    {
+        ?condition lws:validDuring ?period .
+        ?request lws:requestTime ?time .
+        ?time :during ?period .
+    } log:or {
+        ?condition log:notIncludes { ?condition lws:validDuring ?any } .
+    } .
+    
+    # Add more condition checks as needed
+    
+} => {
+    ?auth :meetsAllConditions ?request .
+} .
+
+#################################################################
+# Helper Rules for Policy Satisfaction
+#################################################################
+
+# Principal satisfies policy if it matches the principal class
+{
+    ?principal a ?class .
+    ?policy lws:principalClass ?class .
+} => {
+    ?principal :satisfiesPolicy ?policy .
+} .
+
+# Principal satisfies policy if it's in the required group
+{
+    ?principal lws:memberOf ?group .
+    ?policy lws:condition [ lws:memberOf ?group ] .
+} => {
+    ?principal :satisfiesPolicy ?policy .
+} .
+
+# Principal satisfies policy if email domain matches
+{
+    ?principal lws:email ?email .
+    ?policy lws:condition [ lws:emailDomain ?domain ] .
+    ?email string:endsWith ?domain .
+} => {
+    ?principal :satisfiesPolicy ?policy .
+} .
+
+#################################################################
+# Rule 8: Mode Inheritance
+# Write mode implies Append mode
+#################################################################
+
+{
+    ?auth lws:grants lws:Write .
+} => {
+    ?auth lws:grants lws:Append .
+} .
+
+#################################################################
+# Rule 9: Control Mode Super-permission
+# Control mode implies all other modes for administrative access
+#################################################################
+
+{
+    ?auth lws:grants lws:Control .
+} => {
+    ?auth lws:grants lws:Read ;
+        lws:grants lws:Write ;
+        lws:grants lws:Append ;
+        lws:grants lws:Delete ;
+        lws:grants lws:Share .
+} .
+
+#################################################################
+# Rule 10: Default Deny
+# If no allow decision has been made, the request is denied
+# This is implemented by the absence of an Allow decision
+#################################################################
+
+{
+    ?request a lws:AccessRequest .
+    
+    # No allow decision exists
+    ?request log:notIncludes { ?request lws:decision lws:Allowed } .
+    
+} => {
+    ?request lws:decision lws:Denied ;
+        :reason "No matching authorization found" .
+} .
+
+#################################################################
+# Audit Trail Generation
+#################################################################
+
+{
+    ?request a lws:AccessRequest ;
+        lws:requestedBy ?principal ;
+        lws:requestsMode ?mode ;
+        lws:requestsResource ?resource ;
+        lws:requestTime ?time ;
+        lws:decision ?decision .
+    
+    ?decision :decidedBy ?auth .
+    
+} => {
+    [ a lws:AuditEntry ;
+        lws:timestamp ?time ;
+        lws:principal ?principal ;
+        lws:action ?mode ;
+        lws:resource ?resource ;
+        lws:result ?decision ;
+        lws:authorization ?auth
+    ] .
+} .

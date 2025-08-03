@@ -1,3 +1,567 @@
-# https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps_syntax.html
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix s3: <http://www.w3.org/ns/s3#> .
+@prefix iam: <http://www.w3.org/ns/iam#> .
 
-@prefix s3: <https://www.w3.org/ns/auth/s3#> .
+# AWS S3 Access Control Vocabulary
+# This vocabulary describes the concepts in the AWS S3 permission system
+
+s3: a owl:Ontology ;
+    rdfs:label "AWS S3 Access Control Vocabulary"@en ;
+    rdfs:comment "A vocabulary for describing AWS S3 access control concepts including policies, principals, actions, resources, and conditions"@en .
+
+# Core Classes
+
+s3:Policy a owl:Class ;
+    rdfs:label "Policy"@en ;
+    rdfs:comment "A JSON policy document that defines permissions"@en .
+
+s3:BucketPolicy a owl:Class ;
+    rdfs:subClassOf s3:Policy ;
+    rdfs:label "Bucket Policy"@en ;
+    rdfs:comment "A resource-based policy attached to an S3 bucket"@en .
+
+s3:IdentityBasedPolicy a owl:Class ;
+    rdfs:subClassOf s3:Policy ;
+    rdfs:label "Identity-Based Policy"@en ;
+    rdfs:comment "A policy attached to IAM users, groups, or roles"@en .
+
+s3:AccessPointPolicy a owl:Class ;
+    rdfs:subClassOf s3:Policy ;
+    rdfs:label "Access Point Policy"@en ;
+    rdfs:comment "A policy attached to an S3 Access Point"@en .
+
+s3:ACL a owl:Class ;
+    rdfs:label "Access Control List"@en ;
+    rdfs:comment "A list of grants identifying grantees and permissions"@en .
+
+s3:Statement a owl:Class ;
+    rdfs:label "Policy Statement"@en ;
+    rdfs:comment "A single permission rule within a policy"@en .
+
+s3:Principal a owl:Class ;
+    rdfs:label "Principal"@en ;
+    rdfs:comment "An entity that can make requests to AWS"@en .
+
+s3:AWSAccountPrincipal a owl:Class ;
+    rdfs:subClassOf s3:Principal ;
+    rdfs:label "AWS Account Principal"@en ;
+    rdfs:comment "An AWS account that can make requests"@en .
+
+s3:IAMUserPrincipal a owl:Class ;
+    rdfs:subClassOf s3:Principal ;
+    rdfs:label "IAM User Principal"@en ;
+    rdfs:comment "An IAM user that can make requests"@en .
+
+s3:IAMRolePrincipal a owl:Class ;
+    rdfs:subClassOf s3:Principal ;
+    rdfs:label "IAM Role Principal"@en ;
+    rdfs:comment "An IAM role that can make requests"@en .
+
+s3:FederatedUserPrincipal a owl:Class ;
+    rdfs:subClassOf s3:Principal ;
+    rdfs:label "Federated User Principal"@en ;
+    rdfs:comment "A federated user that can make requests"@en .
+
+s3:ServicePrincipal a owl:Class ;
+    rdfs:subClassOf s3:Principal ;
+    rdfs:label "Service Principal"@en ;
+    rdfs:comment "An AWS service that can make requests"@en .
+
+s3:AnonymousPrincipal a owl:Class ;
+    rdfs:subClassOf s3:Principal ;
+    rdfs:label "Anonymous Principal"@en ;
+    rdfs:comment "Unauthenticated users"@en .
+
+s3:Action a owl:Class ;
+    rdfs:label "Action"@en ;
+    rdfs:comment "An operation that can be performed on AWS resources"@en .
+
+s3:BucketAction a owl:Class ;
+    rdfs:subClassOf s3:Action ;
+    rdfs:label "Bucket Action"@en ;
+    rdfs:comment "An action that operates on S3 buckets"@en .
+
+s3:ObjectAction a owl:Class ;
+    rdfs:subClassOf s3:Action ;
+    rdfs:label "Object Action"@en ;
+    rdfs:comment "An action that operates on S3 objects"@en .
+
+s3:Resource a owl:Class ;
+    rdfs:label "Resource"@en ;
+    rdfs:comment "An AWS resource that can be accessed"@en .
+
+s3:Bucket a owl:Class ;
+    rdfs:subClassOf s3:Resource ;
+    rdfs:label "S3 Bucket"@en ;
+    rdfs:comment "An S3 bucket resource"@en .
+
+s3:Object a owl:Class ;
+    rdfs:subClassOf s3:Resource ;
+    rdfs:label "S3 Object"@en ;
+    rdfs:comment "An S3 object resource"@en .
+
+s3:AccessPoint a owl:Class ;
+    rdfs:subClassOf s3:Resource ;
+    rdfs:label "S3 Access Point"@en ;
+    rdfs:comment "An S3 Access Point resource"@en .
+
+s3:Condition a owl:Class ;
+    rdfs:label "Condition"@en ;
+    rdfs:comment "A condition that must be met for a statement to apply"@en .
+
+s3:StringCondition a owl:Class ;
+    rdfs:subClassOf s3:Condition ;
+    rdfs:label "String Condition"@en ;
+    rdfs:comment "A condition that compares string values"@en .
+
+s3:NumericCondition a owl:Class ;
+    rdfs:subClassOf s3:Condition ;
+    rdfs:label "Numeric Condition"@en ;
+    rdfs:comment "A condition that compares numeric values"@en .
+
+s3:DateCondition a owl:Class ;
+    rdfs:subClassOf s3:Condition ;
+    rdfs:label "Date Condition"@en ;
+    rdfs:comment "A condition that compares date/time values"@en .
+
+s3:BooleanCondition a owl:Class ;
+    rdfs:subClassOf s3:Condition ;
+    rdfs:label "Boolean Condition"@en ;
+    rdfs:comment "A condition that compares boolean values"@en .
+
+s3:IpAddressCondition a owl:Class ;
+    rdfs:subClassOf s3:Condition ;
+    rdfs:label "IP Address Condition"@en ;
+    rdfs:comment "A condition that compares IP addresses"@en .
+
+s3:ArnCondition a owl:Class ;
+    rdfs:subClassOf s3:Condition ;
+    rdfs:label "ARN Condition"@en ;
+    rdfs:comment "A condition that compares ARNs"@en .
+
+s3:Effect a owl:Class ;
+    rdfs:label "Effect"@en ;
+    rdfs:comment "The effect of a policy statement"@en .
+
+s3:Request a owl:Class ;
+    rdfs:label "Request"@en ;
+    rdfs:comment "A request to perform an action on a resource"@en .
+
+s3:RequestContext a owl:Class ;
+    rdfs:label "Request Context"@en ;
+    rdfs:comment "The context information associated with a request"@en .
+
+# Properties
+
+s3:hasStatement a owl:ObjectProperty ;
+    rdfs:domain s3:Policy ;
+    rdfs:range s3:Statement ;
+    rdfs:label "has statement"@en ;
+    rdfs:comment "Links a policy to its statements"@en .
+
+s3:hasPrincipal a owl:ObjectProperty ;
+    rdfs:domain s3:Statement ;
+    rdfs:range s3:Principal ;
+    rdfs:label "has principal"@en ;
+    rdfs:comment "Specifies the principal(s) for a statement"@en .
+
+s3:hasAction a owl:ObjectProperty ;
+    rdfs:domain s3:Statement ;
+    rdfs:range s3:Action ;
+    rdfs:label "has action"@en ;
+    rdfs:comment "Specifies the action(s) for a statement"@en .
+
+s3:hasResource a owl:ObjectProperty ;
+    rdfs:domain s3:Statement ;
+    rdfs:range s3:Resource ;
+    rdfs:label "has resource"@en ;
+    rdfs:comment "Specifies the resource(s) for a statement"@en .
+
+s3:hasCondition a owl:ObjectProperty ;
+    rdfs:domain s3:Statement ;
+    rdfs:range s3:Condition ;
+    rdfs:label "has condition"@en ;
+    rdfs:comment "Specifies condition(s) for a statement"@en .
+
+s3:hasEffect a owl:ObjectProperty ;
+    rdfs:domain s3:Statement ;
+    rdfs:range s3:Effect ;
+    rdfs:label "has effect"@en ;
+    rdfs:comment "Specifies the effect (Allow or Deny) of a statement"@en .
+
+s3:attachedTo a owl:ObjectProperty ;
+    rdfs:domain s3:Policy ;
+    rdfs:range s3:Resource ;
+    rdfs:label "attached to"@en ;
+    rdfs:comment "Specifies what resource a policy is attached to"@en .
+
+s3:madeBy a owl:ObjectProperty ;
+    rdfs:domain s3:Request ;
+    rdfs:range s3:Principal ;
+    rdfs:label "made by"@en ;
+    rdfs:comment "Specifies who made the request"@en .
+
+s3:requestsAction a owl:ObjectProperty ;
+    rdfs:domain s3:Request ;
+    rdfs:range s3:Action ;
+    rdfs:label "requests action"@en ;
+    rdfs:comment "Specifies what action is being requested"@en .
+
+s3:targetsResource a owl:ObjectProperty ;
+    rdfs:domain s3:Request ;
+    rdfs:range s3:Resource ;
+    rdfs:label "targets resource"@en ;
+    rdfs:comment "Specifies what resource is being accessed"@en .
+
+s3:hasContext a owl:ObjectProperty ;
+    rdfs:domain s3:Request ;
+    rdfs:range s3:RequestContext ;
+    rdfs:label "has context"@en ;
+    rdfs:comment "Links a request to its context information"@en .
+
+s3:conditionKey a owl:DatatypeProperty ;
+    rdfs:domain s3:Condition ;
+    rdfs:range xsd:string ;
+    rdfs:label "condition key"@en ;
+    rdfs:comment "The key being evaluated in a condition"@en .
+
+s3:conditionOperator a owl:DatatypeProperty ;
+    rdfs:domain s3:Condition ;
+    rdfs:range xsd:string ;
+    rdfs:label "condition operator"@en ;
+    rdfs:comment "The comparison operator for a condition"@en .
+
+s3:conditionValue a owl:DatatypeProperty ;
+    rdfs:domain s3:Condition ;
+    rdfs:range rdfs:Literal ;
+    rdfs:label "condition value"@en ;
+    rdfs:comment "The value to compare against in a condition"@en .
+
+s3:arn a owl:DatatypeProperty ;
+    rdfs:domain s3:Resource ;
+    rdfs:range xsd:string ;
+    rdfs:label "ARN"@en ;
+    rdfs:comment "Amazon Resource Name"@en .
+
+s3:principalId a owl:DatatypeProperty ;
+    rdfs:domain s3:Principal ;
+    rdfs:range xsd:string ;
+    rdfs:label "principal ID"@en ;
+    rdfs:comment "The unique identifier for a principal"@en .
+
+s3:accountId a owl:DatatypeProperty ;
+    rdfs:domain s3:AWSAccountPrincipal ;
+    rdfs:range xsd:string ;
+    rdfs:label "account ID"@en ;
+    rdfs:comment "AWS account identifier"@en .
+
+s3:actionName a owl:DatatypeProperty ;
+    rdfs:domain s3:Action ;
+    rdfs:range xsd:string ;
+    rdfs:label "action name"@en ;
+    rdfs:comment "The name of the action (e.g., s3:GetObject)"@en .
+
+s3:statementId a owl:DatatypeProperty ;
+    rdfs:domain s3:Statement ;
+    rdfs:range xsd:string ;
+    rdfs:label "statement ID"@en ;
+    rdfs:comment "Optional identifier for a statement"@en .
+
+s3:version a owl:DatatypeProperty ;
+    rdfs:domain s3:Policy ;
+    rdfs:range xsd:string ;
+    rdfs:label "version"@en ;
+    rdfs:comment "Policy language version"@en .
+
+# Effect Individuals
+s3:Allow a s3:Effect ;
+    rdfs:label "Allow"@en ;
+    rdfs:comment "Grants the specified permissions"@en .
+
+s3:Deny a s3:Effect ;
+    rdfs:label "Deny"@en ;
+    rdfs:comment "Explicitly denies the specified permissions"@en .
+
+# Common Actions
+s3:GetObject a s3:ObjectAction ;
+    s3:actionName "s3:GetObject" ;
+    rdfs:label "Get Object"@en ;
+    rdfs:comment "Permission to retrieve objects from S3"@en .
+
+s3:PutObject a s3:ObjectAction ;
+    s3:actionName "s3:PutObject" ;
+    rdfs:label "Put Object"@en ;
+    rdfs:comment "Permission to upload objects to S3"@en .
+
+s3:DeleteObject a s3:ObjectAction ;
+    s3:actionName "s3:DeleteObject" ;
+    rdfs:label "Delete Object"@en ;
+    rdfs:comment "Permission to delete objects from S3"@en .
+
+s3:ListBucket a s3:BucketAction ;
+    s3:actionName "s3:ListBucket" ;
+    rdfs:label "List Bucket"@en ;
+    rdfs:comment "Permission to list objects in a bucket"@en .
+
+s3:CreateBucket a s3:BucketAction ;
+    s3:actionName "s3:CreateBucket" ;
+    rdfs:label "Create Bucket"@en ;
+    rdfs:comment "Permission to create new buckets"@en .
+
+s3:DeleteBucket a s3:BucketAction ;
+    s3:actionName "s3:DeleteBucket" ;
+    rdfs:label "Delete Bucket"@en ;
+    rdfs:comment "Permission to delete buckets"@en .
+
+# Common Condition Keys
+s3:SourceIp a owl:Class ;
+    rdfs:subClassOf s3:IpAddressCondition ;
+    rdfs:label "Source IP Condition"@en ;
+    rdfs:comment "Condition based on request source IP"@en .
+
+s3:SecureTransport a owl:Class ;
+    rdfs:subClassOf s3:BooleanCondition ;
+    rdfs:label "Secure Transport Condition"@en ;
+    rdfs:comment "Condition requiring HTTPS/TLS"@en .
+
+s3:RequestTime a owl:Class ;
+    rdfs:subClassOf s3:DateCondition ;
+    rdfs:label "Request Time Condition"@en ;
+    rdfs:comment "Condition based on request timestamp"@en .
+
+# Access Control List Properties
+s3:hasGrant a owl:ObjectProperty ;
+    rdfs:domain s3:ACL ;
+    rdfs:range s3:Grant ;
+    rdfs:label "has grant"@en ;
+    rdfs:comment "Links an ACL to its grants"@en .
+
+s3:Grant a owl:Class ;
+    rdfs:label "Grant"@en ;
+    rdfs:comment "A permission grant in an ACL"@en .
+
+s3:grantee a owl:ObjectProperty ;
+    rdfs:domain s3:Grant ;
+    rdfs:range s3:Principal ;
+    rdfs:label "grantee"@en ;
+    rdfs:comment "The recipient of the grant"@en .
+
+s3:permission a owl:ObjectProperty ;
+    rdfs:domain s3:Grant ;
+    rdfs:range s3:Permission ;
+    rdfs:label "permission"@en ;
+    rdfs:comment "The permission being granted"@en .
+
+s3:Permission a owl:Class ;
+    rdfs:label "Permission"@en ;
+    rdfs:comment "A permission that can be granted via ACL"@en .
+
+# ACL Permissions
+s3:READ a s3:Permission ;
+    rdfs:label "READ"@en ;
+    rdfs:comment "Permission to read object data"@en .
+
+s3:WRITE a s3:Permission ;
+    rdfs:label "WRITE"@en ;
+    rdfs:comment "Permission to write objects"@en .
+
+s3:READ_ACP a s3:Permission ;
+    rdfs:label "READ_ACP"@en ;
+    rdfs:comment "Permission to read ACL"@en .
+
+s3:WRITE_ACP a s3:Permission ;
+    rdfs:label "WRITE_ACP"@en ;
+    rdfs:comment "Permission to write ACL"@en .
+
+s3:FULL_CONTROL a s3:Permission ;
+    rdfs:label "FULL_CONTROL"@en ;
+    rdfs:comment "Full control permission"@en .
+
+# Request Context Properties
+s3:sourceIpAddress a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:string ;
+    rdfs:label "source IP address"@en ;
+    rdfs:comment "The IP address from which the request originated"@en .
+
+s3:isSecureTransport a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "is secure transport"@en ;
+    rdfs:comment "Whether the request was made over HTTPS"@en .
+
+s3:requestTime a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "request time"@en ;
+    rdfs:comment "When the request was made"@en .
+
+s3:principalArn a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:string ;
+    rdfs:label "principal ARN"@en ;
+    rdfs:comment "ARN of the principal making the request"@en .
+
+s3:principalAccount a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:string ;
+    rdfs:label "principal account"@en ;
+    rdfs:comment "Account ID of the principal"@en .
+
+s3:principalOrgId a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:string ;
+    rdfs:label "principal organization ID"@en ;
+    rdfs:comment "Organization ID of the principal"@en .
+
+s3:resourceAccount a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:string ;
+    rdfs:label "resource account"@en ;
+    rdfs:comment "Account ID that owns the resource"@en .
+
+# S3-specific condition keys
+s3:x-amz-acl a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:string ;
+    rdfs:label "x-amz-acl"@en ;
+    rdfs:comment "Canned ACL specified in request"@en .
+
+s3:x-amz-server-side-encryption a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:string ;
+    rdfs:label "x-amz-server-side-encryption"@en ;
+    rdfs:comment "Server-side encryption method"@en .
+
+s3:x-amz-storage-class a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:string ;
+    rdfs:label "x-amz-storage-class"@en ;
+    rdfs:comment "Storage class for the object"@en .
+
+s3:VersionId a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:string ;
+    rdfs:label "version ID"@en ;
+    rdfs:comment "Version ID of the object"@en .
+
+s3:prefix a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:string ;
+    rdfs:label "prefix"@en ;
+    rdfs:comment "Key name prefix for list operations"@en .
+
+s3:ExistingObjectTag a owl:ObjectProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range s3:Tag ;
+    rdfs:label "existing object tag"@en ;
+    rdfs:comment "Tags on the existing object"@en .
+
+s3:RequestObjectTag a owl:ObjectProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range s3:Tag ;
+    rdfs:label "request object tag"@en ;
+    rdfs:comment "Tags being applied in the request"@en .
+
+s3:Tag a owl:Class ;
+    rdfs:label "Tag"@en ;
+    rdfs:comment "A key-value tag"@en .
+
+s3:tagKey a owl:DatatypeProperty ;
+    rdfs:domain s3:Tag ;
+    rdfs:range xsd:string ;
+    rdfs:label "tag key"@en ;
+    rdfs:comment "The key of a tag"@en .
+
+s3:tagValue a owl:DatatypeProperty ;
+    rdfs:domain s3:Tag ;
+    rdfs:range xsd:string ;
+    rdfs:label "tag value"@en ;
+    rdfs:comment "The value of a tag"@en .
+
+# Multi-Factor Authentication
+s3:MultiFactorAuthPresent a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "MFA present"@en ;
+    rdfs:comment "Whether MFA was used for authentication"@en .
+
+s3:MultiFactorAuthAge a owl:DatatypeProperty ;
+    rdfs:domain s3:RequestContext ;
+    rdfs:range xsd:integer ;
+    rdfs:label "MFA age"@en ;
+    rdfs:comment "Seconds since MFA authentication"@en .
+
+# Access Grants
+s3:AccessGrant a owl:Class ;
+    rdfs:label "Access Grant"@en ;
+    rdfs:comment "An S3 Access Grant for fine-grained permissions"@en .
+
+s3:AccessGrantsInstance a owl:Class ;
+    rdfs:label "Access Grants Instance"@en ;
+    rdfs:comment "Container for S3 Access Grants"@en .
+
+s3:AccessGrantsLocation a owl:Class ;
+    rdfs:label "Access Grants Location"@en ;
+    rdfs:comment "A registered location in Access Grants"@en .
+
+s3:hasAccessGrant a owl:ObjectProperty ;
+    rdfs:domain s3:AccessGrantsInstance ;
+    rdfs:range s3:AccessGrant ;
+    rdfs:label "has access grant"@en ;
+    rdfs:comment "Links instance to its grants"@en .
+
+s3:grantScope a owl:DatatypeProperty ;
+    rdfs:domain s3:AccessGrant ;
+    rdfs:range xsd:string ;
+    rdfs:label "grant scope"@en ;
+    rdfs:comment "The scope of the access grant"@en .
+
+# Block Public Access
+s3:BlockPublicAccess a owl:Class ;
+    rdfs:label "Block Public Access"@en ;
+    rdfs:comment "Settings to block public access"@en .
+
+s3:blockPublicAcls a owl:DatatypeProperty ;
+    rdfs:domain s3:BlockPublicAccess ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "block public ACLs"@en ;
+    rdfs:comment "Block public access via ACLs"@en .
+
+s3:ignorePublicAcls a owl:DatatypeProperty ;
+    rdfs:domain s3:BlockPublicAccess ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "ignore public ACLs"@en ;
+    rdfs:comment "Ignore public ACLs"@en .
+
+s3:blockPublicPolicy a owl:DatatypeProperty ;
+    rdfs:domain s3:BlockPublicAccess ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "block public policy"@en ;
+    rdfs:comment "Block public bucket policies"@en .
+
+s3:restrictPublicBuckets a owl:DatatypeProperty ;
+    rdfs:domain s3:BlockPublicAccess ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "restrict public buckets"@en ;
+    rdfs:comment "Restrict public bucket access"@en .
+
+# Object Ownership
+s3:ObjectOwnership a owl:Class ;
+    rdfs:label "Object Ownership"@en ;
+    rdfs:comment "Object ownership settings"@en .
+
+s3:BucketOwnerEnforced a s3:ObjectOwnership ;
+    rdfs:label "Bucket Owner Enforced"@en ;
+    rdfs:comment "Bucket owner owns all objects"@en .
+
+s3:BucketOwnerPreferred a s3:ObjectOwnership ;
+    rdfs:label "Bucket Owner Preferred"@en ;
+    rdfs:comment "Bucket owner owns objects with specific ACL"@en .
+
+s3:ObjectWriter a s3:ObjectOwnership ;
+    rdfs:label "Object Writer"@en ;
+    rdfs:comment "Uploader owns the object"@en .

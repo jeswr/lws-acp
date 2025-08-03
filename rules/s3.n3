@@ -1,0 +1,523 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix s3: <http://www.w3.org/ns/s3#> .
+@prefix : <http://www.w3.org/ns/s3/rules#> .
+
+# AWS S3 Access Control Evaluation Rules
+# These rules describe how AWS S3 evaluates access control decisions
+
+# Rule 1: A request is allowed if there is an Allow statement that matches
+# and no Deny statement that matches
+{
+    ?request a s3:Request ;
+        s3:madeBy ?principal ;
+        s3:requestsAction ?action ;
+        s3:targetsResource ?resource ;
+        s3:hasContext ?context .
+    
+    # Find an Allow statement that matches
+    ?statement a s3:Statement ;
+        s3:hasEffect s3:Allow ;
+        s3:hasPrincipal ?principal ;
+        s3:hasAction ?action ;
+        s3:hasResource ?resource .
+    
+    # Check conditions if present
+    ?statement s3:hasCondition ?condition .
+    ?condition :evaluatesTrue ?context .
+    
+    # No Deny statement matches
+    ( ?statement2 {
+        ?statement2 a s3:Statement ;
+            s3:hasEffect s3:Deny ;
+            s3:hasPrincipal ?principal ;
+            s3:hasAction ?action ;
+            s3:hasResource ?resource .
+    } ?denies ) log:collectAllIn _:x .
+    ?denies list:length 0 .
+} => {
+    ?request :isAllowed true .
+} .
+
+# Rule 2: A request is denied if there is any Deny statement that matches
+{
+    ?request a s3:Request ;
+        s3:madeBy ?principal ;
+        s3:requestsAction ?action ;
+        s3:targetsResource ?resource ;
+        s3:hasContext ?context .
+    
+    # Find a Deny statement that matches
+    ?statement a s3:Statement ;
+        s3:hasEffect s3:Deny ;
+        s3:hasPrincipal ?principal ;
+        s3:hasAction ?action ;
+        s3:hasResource ?resource .
+    
+    # Check conditions if present
+    ?statement s3:hasCondition ?condition .
+    ?condition :evaluatesTrue ?context .
+} => {
+    ?request :isDenied true .
+} .
+
+# Rule 3: Explicit Deny always overrides Allow
+{
+    ?request :isAllowed true ;
+        :isDenied true .
+} => {
+    ?request :finalDecision s3:Deny .
+} .
+
+# Rule 4: If only allowed (no deny), then allow
+{
+    ?request :isAllowed true .
+    # No deny exists
+    ( ?d { ?request :isDenied ?d } ?denials ) log:collectAllIn _:x .
+    ?denials list:length 0 .
+} => {
+    ?request :finalDecision s3:Allow .
+} .
+
+# Rule 5: Default deny - if no explicit allow, then deny
+{
+    ?request a s3:Request .
+    # No allow exists
+    ( ?a { ?request :isAllowed ?a } ?allows ) log:collectAllIn _:x .
+    ?allows list:length 0 .
+} => {
+    ?request :finalDecision s3:Deny .
+} .
+
+# Rule 6: Principal matching - wildcard principal
+{
+    ?statement s3:hasPrincipal "*" .
+    ?request s3:madeBy ?anyPrincipal .
+} => {
+    ?statement :matchesPrincipal ?anyPrincipal .
+} .
+
+# Rule 7: Principal matching - specific principal
+{
+    ?statement s3:hasPrincipal ?principal .
+    ?request s3:madeBy ?principal .
+    ?principal log:notEqualTo "*" .
+} => {
+    ?statement :matchesPrincipal ?principal .
+} .
+
+# Rule 8: Resource matching with wildcards
+{
+    ?statement s3:hasResource ?resourcePattern .
+    ?request s3:targetsResource ?resource .
+    ?resource s3:arn ?resourceArn .
+    ?resourcePattern string:matches ".*\\*.*" .
+    # Convert pattern to regex and match
+    ( ?resourcePattern "\\*" "(.*)" ) string:replace ?regex .
+    ?resourceArn string:matches ?regex .
+} => {
+    ?statement :matchesResource ?resource .
+} .
+
+# Rule 9: Exact resource matching
+{
+    ?statement s3:hasResource ?resource .
+    ?request s3:targetsResource ?resource .
+    ?resource s3:arn ?arn .
+    ?arn string:matches "^[^*]+$" .  # No wildcards
+} => {
+    ?statement :matchesResource ?resource .
+} .
+
+# Rule 10: Action matching with wildcards
+{
+    ?statement s3:hasAction ?actionPattern .
+    ?request s3:requestsAction ?action .
+    ?action s3:actionName ?actionName .
+    ?actionPattern string:matches ".*\\*" .
+    # s3:* matches all S3 actions
+    ( ?actionPattern "s3:\\*" "s3:.*" ) string:replace ?regex .
+    ?actionName string:matches ?regex .
+} => {
+    ?statement :matchesAction ?action .
+} .
+
+# Rule 11: Exact action matching
+{
+    ?statement s3:hasAction ?action .
+    ?request s3:requestsAction ?action .
+} => {
+    ?statement :matchesAction ?action .
+} .
+
+# Rule 12: String condition evaluation - StringEquals
+{
+    ?condition a s3:StringCondition ;
+        s3:conditionOperator "StringEquals" ;
+        s3:conditionKey ?key ;
+        s3:conditionValue ?expectedValue .
+    ?context ?key ?actualValue .
+    ?actualValue log:equalTo ?expectedValue .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 13: String condition evaluation - StringNotEquals
+{
+    ?condition a s3:StringCondition ;
+        s3:conditionOperator "StringNotEquals" ;
+        s3:conditionKey ?key ;
+        s3:conditionValue ?expectedValue .
+    ?context ?key ?actualValue .
+    ?actualValue log:notEqualTo ?expectedValue .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 14: String condition evaluation - StringLike
+{
+    ?condition a s3:StringCondition ;
+        s3:conditionOperator "StringLike" ;
+        s3:conditionKey ?key ;
+        s3:conditionValue ?pattern .
+    ?context ?key ?actualValue .
+    # Convert pattern to regex
+    ( ?pattern "\\*" "(.*)" ) string:replace ?regex .
+    ?actualValue string:matches ?regex .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 15: Boolean condition evaluation - Bool
+{
+    ?condition a s3:BooleanCondition ;
+        s3:conditionOperator "Bool" ;
+        s3:conditionKey ?key ;
+        s3:conditionValue ?expectedValue .
+    ?context ?key ?actualValue .
+    ?actualValue log:equalTo ?expectedValue .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 16: IP address condition evaluation - IpAddress
+{
+    ?condition a s3:IpAddressCondition ;
+        s3:conditionOperator "IpAddress" ;
+        s3:conditionKey ?key ;
+        s3:conditionValue ?cidr .
+    ?context ?key ?ipAddress .
+    # Check if IP is in CIDR range
+    ( ?ipAddress ?cidr ) :ipInCidr true .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 17: Numeric condition evaluation - NumericLessThan
+{
+    ?condition a s3:NumericCondition ;
+        s3:conditionOperator "NumericLessThan" ;
+        s3:conditionKey ?key ;
+        s3:conditionValue ?threshold .
+    ?context ?key ?actualValue .
+    ?actualValue math:lessThan ?threshold .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 18: Numeric condition evaluation - NumericGreaterThan
+{
+    ?condition a s3:NumericCondition ;
+        s3:conditionOperator "NumericGreaterThan" ;
+        s3:conditionKey ?key ;
+        s3:conditionValue ?threshold .
+    ?context ?key ?actualValue .
+    ?actualValue math:greaterThan ?threshold .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 19: Date condition evaluation - DateLessThan
+{
+    ?condition a s3:DateCondition ;
+        s3:conditionOperator "DateLessThan" ;
+        s3:conditionKey ?key ;
+        s3:conditionValue ?threshold .
+    ?context ?key ?actualValue .
+    # Compare timestamps
+    ?actualValue :isBefore ?threshold .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 20: Multiple conditions - all must be true (AND logic)
+{
+    ?statement s3:hasCondition ?condition1 ;
+        s3:hasCondition ?condition2 .
+    ?condition1 log:notEqualTo ?condition2 .
+    ?condition1 :evaluatesTrue ?context .
+    ?condition2 :evaluatesTrue ?context .
+} => {
+    ?statement :allConditionsTrue ?context .
+} .
+
+# Rule 21: Bucket policy evaluation
+{
+    ?bucket a s3:Bucket .
+    ?policy a s3:BucketPolicy ;
+        s3:attachedTo ?bucket ;
+        s3:hasStatement ?statement .
+    ?request s3:targetsResource ?resource .
+    ?resource :isInBucket ?bucket .
+    ?statement :matchesPrincipal ?principal ;
+        :matchesAction ?action ;
+        :matchesResource ?resource .
+} => {
+    ?policy :appliesTo ?request .
+} .
+
+# Rule 22: Identity-based policy evaluation
+{
+    ?principal a s3:Principal .
+    ?policy a s3:IdentityBasedPolicy ;
+        s3:attachedTo ?principal ;
+        s3:hasStatement ?statement .
+    ?request s3:madeBy ?principal .
+    ?statement :matchesAction ?action ;
+        :matchesResource ?resource .
+} => {
+    ?policy :appliesTo ?request .
+} .
+
+# Rule 23: ACL evaluation - grant matching
+{
+    ?acl a s3:ACL ;
+        s3:attachedTo ?resource ;
+        s3:hasGrant ?grant .
+    ?grant s3:grantee ?principal ;
+        s3:permission ?permission .
+    ?request s3:madeBy ?principal ;
+        s3:targetsResource ?resource ;
+        s3:requestsAction ?action .
+    ?permission :allowsAction ?action .
+} => {
+    ?acl :grants ?request .
+} .
+
+# Rule 24: Permission to action mapping for ACLs
+{
+    s3:READ :allowsAction s3:GetObject .
+    s3:WRITE :allowsAction s3:PutObject .
+    s3:READ_ACP :allowsAction s3:GetObjectAcl .
+    s3:WRITE_ACP :allowsAction s3:PutObjectAcl .
+    s3:FULL_CONTROL :allowsAction s3:GetObject ;
+        :allowsAction s3:PutObject ;
+        :allowsAction s3:DeleteObject ;
+        :allowsAction s3:GetObjectAcl ;
+        :allowsAction s3:PutObjectAcl .
+} .
+
+# Rule 25: Block Public Access enforcement
+{
+    ?bucket s3:hasBlockPublicAccess ?bpa .
+    ?bpa s3:blockPublicPolicy true .
+    ?policy a s3:BucketPolicy ;
+        s3:attachedTo ?bucket ;
+        s3:hasStatement ?statement .
+    ?statement s3:hasPrincipal "*" ;
+        s3:hasEffect s3:Allow .
+} => {
+    ?statement :isBlockedByBPA true .
+} .
+
+# Rule 26: Object ownership determines ACL applicability
+{
+    ?bucket s3:hasObjectOwnership s3:BucketOwnerEnforced .
+    ?object :isInBucket ?bucket .
+    ?acl s3:attachedTo ?object .
+} => {
+    ?acl :isDisabled true .
+} .
+
+# Rule 27: Cross-account access requires both policies
+{
+    ?request s3:madeBy ?principal ;
+        s3:targetsResource ?resource .
+    ?principal s3:accountId ?principalAccount .
+    ?resource s3:resourceAccount ?resourceAccount .
+    ?principalAccount log:notEqualTo ?resourceAccount .
+} => {
+    ?request :requiresCrossAccountPolicies true .
+} .
+
+# Rule 28: Service principal special handling
+{
+    ?principal a s3:ServicePrincipal .
+    ?request s3:madeBy ?principal .
+    ?context s3:principalIsAWSService true .
+} => {
+    ?request :bypassesNetworkRestrictions true .
+} .
+
+# Rule 29: MFA requirement check
+{
+    ?statement s3:hasCondition ?condition .
+    ?condition a s3:BooleanCondition ;
+        s3:conditionKey "aws:MultiFactorAuthPresent" ;
+        s3:conditionOperator "Bool" ;
+        s3:conditionValue true .
+    ?context s3:MultiFactorAuthPresent false .
+} => {
+    ?statement :requirementNotMet "MFA" .
+} .
+
+# Rule 30: Secure transport requirement
+{
+    ?statement s3:hasCondition ?condition .
+    ?condition a s3:BooleanCondition ;
+        s3:conditionKey "aws:SecureTransport" ;
+        s3:conditionOperator "Bool" ;
+        s3:conditionValue true .
+    ?context s3:isSecureTransport false .
+} => {
+    ?statement :requirementNotMet "SecureTransport" .
+} .
+
+# Rule 31: Tag-based access control
+{
+    ?statement s3:hasCondition ?condition .
+    ?condition a s3:StringCondition ;
+        s3:conditionKey ?tagKey ;
+        s3:conditionOperator "StringEquals" ;
+        s3:conditionValue ?expectedTagValue .
+    ?tagKey string:startsWith "s3:ExistingObjectTag/" .
+    ?resource s3:hasTag ?tag .
+    ?tag s3:tagKey ?actualKey ;
+        s3:tagValue ?actualValue .
+    ( ?tagKey "s3:ExistingObjectTag/" "" ) string:replace ?actualKey .
+    ?actualValue log:equalTo ?expectedTagValue .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 32: Request tag validation
+{
+    ?statement s3:hasCondition ?condition .
+    ?condition a s3:StringCondition ;
+        s3:conditionKey ?tagKey ;
+        s3:conditionValue ?expectedValue .
+    ?tagKey string:startsWith "s3:RequestObjectTag/" .
+    ?context s3:RequestObjectTag ?requestTag .
+    ?requestTag s3:tagKey ?actualKey ;
+        s3:tagValue ?actualValue .
+    ( ?tagKey "s3:RequestObjectTag/" "" ) string:replace ?actualKey .
+    ?actualValue log:equalTo ?expectedValue .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 33: Version-specific access
+{
+    ?statement s3:hasCondition ?condition .
+    ?condition a s3:StringCondition ;
+        s3:conditionKey "s3:VersionId" ;
+        s3:conditionValue ?requiredVersion .
+    ?context s3:VersionId ?actualVersion .
+    ?actualVersion log:equalTo ?requiredVersion .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 34: Prefix-based access for ListBucket
+{
+    ?statement s3:hasAction s3:ListBucket ;
+        s3:hasCondition ?condition .
+    ?condition a s3:StringCondition ;
+        s3:conditionKey "s3:prefix" ;
+        s3:conditionValue ?allowedPrefix .
+    ?context s3:prefix ?requestedPrefix .
+    ?requestedPrefix string:startsWith ?allowedPrefix .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 35: Storage class restriction
+{
+    ?statement s3:hasAction s3:PutObject ;
+        s3:hasCondition ?condition .
+    ?condition a s3:StringCondition ;
+        s3:conditionKey "s3:x-amz-storage-class" ;
+        s3:conditionValue ?allowedClass .
+    ?context s3:x-amz-storage-class ?requestedClass .
+    ?requestedClass log:equalTo ?allowedClass .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 36: Server-side encryption requirement
+{
+    ?statement s3:hasAction s3:PutObject ;
+        s3:hasCondition ?condition .
+    ?condition a s3:StringCondition ;
+        s3:conditionKey "s3:x-amz-server-side-encryption" ;
+        s3:conditionOperator "StringEquals" ;
+        s3:conditionValue ?requiredEncryption .
+    ?context s3:x-amz-server-side-encryption ?actualEncryption .
+    ?actualEncryption log:equalTo ?requiredEncryption .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 37: Copy source restriction
+{
+    ?statement s3:hasAction s3:PutObject ;
+        s3:hasCondition ?condition .
+    ?condition a s3:StringCondition ;
+        s3:conditionKey "s3:x-amz-copy-source" ;
+        s3:conditionValue ?allowedSource .
+    ?context s3:x-amz-copy-source ?actualSource .
+    ?actualSource string:matches ?allowedSource .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 38: TLS version enforcement
+{
+    ?statement s3:hasCondition ?condition .
+    ?condition a s3:NumericCondition ;
+        s3:conditionKey "s3:TlsVersion" ;
+        s3:conditionOperator "NumericGreaterThanEquals" ;
+        s3:conditionValue ?minVersion .
+    ?context s3:TlsVersion ?actualVersion .
+    ?actualVersion math:notLessThan ?minVersion .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 39: Organization-based access control
+{
+    ?statement s3:hasCondition ?condition .
+    ?condition a s3:StringCondition ;
+        s3:conditionKey "aws:PrincipalOrgID" ;
+        s3:conditionValue ?allowedOrgId .
+    ?context s3:principalOrgId ?actualOrgId .
+    ?actualOrgId log:equalTo ?allowedOrgId .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .
+
+# Rule 40: VPC endpoint restriction
+{
+    ?statement s3:hasCondition ?condition .
+    ?condition a s3:StringCondition ;
+        s3:conditionKey "aws:SourceVpce" ;
+        s3:conditionValue ?allowedVpce .
+    ?context s3:sourceVpce ?actualVpce .
+    ?actualVpce log:equalTo ?allowedVpce .
+} => {
+    ?condition :evaluatesTrue ?context .
+} .

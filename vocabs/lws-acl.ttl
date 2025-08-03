@@ -1,0 +1,371 @@
+@prefix lws: <http://www.w3.org/ns/lws#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+# Linked Web Storage Access Control Vocabulary
+# This vocabulary defines the access control model for the Linked Web Storage specification
+
+lws: a owl:Ontology ;
+    rdfs:label "Linked Web Storage Access Control Vocabulary"@en ;
+    rdfs:comment "A vocabulary for describing access control in the Linked Web Storage specification, designed to be compatible with major cloud storage providers while supporting rich semantic access control"@en ;
+    dc:created "2024-01-15"^^xsd:date ;
+    dc:creator "W3C Linked Web Storage Working Group" ;
+    vann:preferredNamespacePrefix "lws" ;
+    vann:preferredNamespaceUri "http://www.w3.org/ns/lws#" .
+
+#################################################################
+# Core Classes
+#################################################################
+
+lws:Authorization a rdfs:Class, owl:Class ;
+    rdfs:label "Authorization"@en ;
+    rdfs:comment "A grant of access to a resource, connecting principals to resources with specific permission modes"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Policy a rdfs:Class, owl:Class ;
+    rdfs:label "Policy"@en ;
+    rdfs:comment "A reusable access control policy that can be applied to multiple resources"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Principal a rdfs:Class, owl:Class ;
+    rdfs:label "Principal"@en ;
+    rdfs:comment "An entity that can be granted access to resources (users, groups, applications, etc.)"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Resource a rdfs:Class, owl:Class ;
+    rdfs:label "Resource"@en ;
+    rdfs:comment "A resource that can be accessed (files, folders, containers, etc.)"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:PermissionMode a rdfs:Class, owl:Class ;
+    rdfs:label "Permission Mode"@en ;
+    rdfs:comment "A type of access that can be granted to a resource"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Condition a rdfs:Class, owl:Class ;
+    rdfs:label "Condition"@en ;
+    rdfs:comment "A condition that must be met for an authorization to be valid"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:AuditEntry a rdfs:Class, owl:Class ;
+    rdfs:label "Audit Entry"@en ;
+    rdfs:comment "A record of an access attempt or authorization change"@en ;
+    rdfs:isDefinedBy lws: .
+
+#################################################################
+# Principal Subclasses
+#################################################################
+
+lws:User a rdfs:Class, owl:Class ;
+    rdfs:subClassOf lws:Principal ;
+    rdfs:label "User"@en ;
+    rdfs:comment "An individual user principal"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Group a rdfs:Class, owl:Class ;
+    rdfs:subClassOf lws:Principal ;
+    rdfs:label "Group"@en ;
+    rdfs:comment "A group of principals"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Application a rdfs:Class, owl:Class ;
+    rdfs:subClassOf lws:Principal ;
+    rdfs:label "Application"@en ;
+    rdfs:comment "An application or service principal"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:AuthenticatedAgent a rdfs:Class, owl:Class ;
+    rdfs:subClassOf lws:Principal ;
+    rdfs:label "Authenticated Agent"@en ;
+    rdfs:comment "Any authenticated principal (not anonymous)"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:PublicAgent a rdfs:Class, owl:Class ;
+    rdfs:subClassOf lws:Principal ;
+    rdfs:label "Public Agent"@en ;
+    rdfs:comment "Any agent, including anonymous/unauthenticated"@en ;
+    rdfs:isDefinedBy lws: .
+
+#################################################################
+# Permission Mode Instances
+#################################################################
+
+lws:Read a lws:PermissionMode ;
+    rdfs:label "Read"@en ;
+    rdfs:comment "Permission to read/view resource content"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Write a lws:PermissionMode ;
+    rdfs:label "Write"@en ;
+    rdfs:comment "Permission to modify resource content"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Append a lws:PermissionMode ;
+    rdfs:subClassOf lws:Write ;
+    rdfs:label "Append"@en ;
+    rdfs:comment "Permission to add to resource content without modifying existing content"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Delete a lws:PermissionMode ;
+    rdfs:label "Delete"@en ;
+    rdfs:comment "Permission to remove resources"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Control a lws:PermissionMode ;
+    rdfs:label "Control"@en ;
+    rdfs:comment "Permission to modify access control settings"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Share a lws:PermissionMode ;
+    rdfs:label "Share"@en ;
+    rdfs:comment "Permission to share resources with others"@en ;
+    rdfs:isDefinedBy lws: .
+
+#################################################################
+# Properties
+#################################################################
+
+# Authorization Properties
+lws:grantedTo a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "granted to"@en ;
+    rdfs:comment "The principal to whom access is granted"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range lws:Principal ;
+    rdfs:isDefinedBy lws: .
+
+lws:grants a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "grants"@en ;
+    rdfs:comment "The permission mode(s) granted by this authorization"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range lws:PermissionMode ;
+    rdfs:isDefinedBy lws: .
+
+lws:target a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "target"@en ;
+    rdfs:comment "The resource to which access is granted"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range lws:Resource ;
+    rdfs:isDefinedBy lws: .
+
+lws:usePolicy a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "use policy"@en ;
+    rdfs:comment "References a reusable policy for this authorization"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range lws:Policy ;
+    rdfs:isDefinedBy lws: .
+
+lws:inheritsFrom a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "inherits from"@en ;
+    rdfs:comment "Indicates that this authorization inherits from another"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range lws:Authorization ;
+    rdfs:isDefinedBy lws: .
+
+lws:inheritable a rdf:Property, owl:DatatypeProperty ;
+    rdfs:label "inheritable"@en ;
+    rdfs:comment "Whether this authorization can be inherited by child resources"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range xsd:boolean ;
+    rdfs:isDefinedBy lws: .
+
+# Temporal Properties
+lws:validFrom a rdf:Property, owl:DatatypeProperty ;
+    rdfs:label "valid from"@en ;
+    rdfs:comment "The date/time from which this authorization is valid"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range xsd:dateTime ;
+    rdfs:isDefinedBy lws: .
+
+lws:validUntil a rdf:Property, owl:DatatypeProperty ;
+    rdfs:label "valid until"@en ;
+    rdfs:comment "The date/time until which this authorization is valid"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range xsd:dateTime ;
+    rdfs:isDefinedBy lws: .
+
+# Condition Properties
+lws:condition a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "condition"@en ;
+    rdfs:comment "Additional conditions that must be met for the authorization to be valid"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range lws:Condition ;
+    rdfs:isDefinedBy lws: .
+
+lws:ipRange a rdf:Property, owl:DatatypeProperty ;
+    rdfs:label "IP range"@en ;
+    rdfs:comment "IP address range from which access is allowed"@en ;
+    rdfs:domain lws:Condition ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy lws: .
+
+lws:validDuring a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "valid during"@en ;
+    rdfs:comment "Time period during which access is allowed"@en ;
+    rdfs:domain lws:Condition ;
+    rdfs:isDefinedBy lws: .
+
+# Delegation Properties
+lws:onBehalfOf a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "on behalf of"@en ;
+    rdfs:comment "The principal on whose behalf access is being granted"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range lws:Principal ;
+    rdfs:isDefinedBy lws: .
+
+lws:scope a rdf:Property, owl:DatatypeProperty ;
+    rdfs:label "scope"@en ;
+    rdfs:comment "OAuth-style scope string for delegated access"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy lws: .
+
+# Group Properties
+lws:memberOf a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "member of"@en ;
+    rdfs:comment "Indicates group membership"@en ;
+    rdfs:domain lws:Principal ;
+    rdfs:range lws:Group ;
+    rdfs:isDefinedBy lws: .
+
+lws:hasMember a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "has member"@en ;
+    rdfs:comment "Indicates that a group has a member"@en ;
+    rdfs:domain lws:Group ;
+    rdfs:range lws:Principal ;
+    owl:inverseOf lws:memberOf ;
+    rdfs:isDefinedBy lws: .
+
+# Policy Properties
+lws:principalClass a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "principal class"@en ;
+    rdfs:comment "Defines the class of principals to which a policy applies"@en ;
+    rdfs:domain lws:Policy ;
+    rdfs:range rdfs:Class ;
+    rdfs:isDefinedBy lws: .
+
+lws:emailDomain a rdf:Property, owl:DatatypeProperty ;
+    rdfs:label "email domain"@en ;
+    rdfs:comment "Email domain requirement for principals"@en ;
+    rdfs:domain lws:Condition ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy lws: .
+
+# Audit Properties
+lws:timestamp a rdf:Property, owl:DatatypeProperty ;
+    rdfs:label "timestamp"@en ;
+    rdfs:comment "The time of an audit event"@en ;
+    rdfs:domain lws:AuditEntry ;
+    rdfs:range xsd:dateTime ;
+    rdfs:isDefinedBy lws: .
+
+lws:action a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "action"@en ;
+    rdfs:comment "The action attempted or performed"@en ;
+    rdfs:domain lws:AuditEntry ;
+    rdfs:range lws:PermissionMode ;
+    rdfs:isDefinedBy lws: .
+
+lws:result a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "result"@en ;
+    rdfs:comment "The result of an access attempt"@en ;
+    rdfs:domain lws:AuditEntry ;
+    rdfs:isDefinedBy lws: .
+
+lws:principal a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "principal"@en ;
+    rdfs:comment "The principal involved in an audit event"@en ;
+    rdfs:domain lws:AuditEntry ;
+    rdfs:range lws:Principal ;
+    rdfs:isDefinedBy lws: .
+
+lws:resource a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "resource"@en ;
+    rdfs:comment "The resource involved in an audit event"@en ;
+    rdfs:domain lws:AuditEntry ;
+    rdfs:range lws:Resource ;
+    rdfs:isDefinedBy lws: .
+
+lws:authorization a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "authorization"@en ;
+    rdfs:comment "The authorization used for access"@en ;
+    rdfs:domain lws:AuditEntry ;
+    rdfs:range lws:Authorization ;
+    rdfs:isDefinedBy lws: .
+
+# Provider Capability Properties
+lws:StorageProvider a rdfs:Class, owl:Class ;
+    rdfs:label "Storage Provider"@en ;
+    rdfs:comment "A storage provider that implements LWS"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:supportsMode a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "supports mode"@en ;
+    rdfs:comment "Permission modes supported by a provider"@en ;
+    rdfs:domain lws:StorageProvider ;
+    rdfs:range lws:PermissionMode ;
+    rdfs:isDefinedBy lws: .
+
+lws:supportsFeature a rdf:Property, owl:ObjectProperty ;
+    rdfs:label "supports feature"@en ;
+    rdfs:comment "Advanced features supported by a provider"@en ;
+    rdfs:domain lws:StorageProvider ;
+    rdfs:isDefinedBy lws: .
+
+lws:maxPrincipalsPerResource a rdf:Property, owl:DatatypeProperty ;
+    rdfs:label "max principals per resource"@en ;
+    rdfs:comment "Maximum number of principals that can be granted access to a single resource"@en ;
+    rdfs:domain lws:StorageProvider ;
+    rdfs:range xsd:integer ;
+    rdfs:isDefinedBy lws: .
+
+lws:supportsInheritance a rdf:Property, owl:DatatypeProperty ;
+    rdfs:label "supports inheritance"@en ;
+    rdfs:comment "Whether the provider supports permission inheritance"@en ;
+    rdfs:domain lws:StorageProvider ;
+    rdfs:range xsd:boolean ;
+    rdfs:isDefinedBy lws: .
+
+# Access Result Values
+lws:Allowed a owl:Thing ;
+    rdfs:label "Allowed"@en ;
+    rdfs:comment "Access was allowed"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:Denied a owl:Thing ;
+    rdfs:label "Denied"@en ;
+    rdfs:comment "Access was denied"@en ;
+    rdfs:isDefinedBy lws: .
+
+# Additional Properties
+lws:note a rdf:Property, owl:DatatypeProperty ;
+    rdfs:label "note"@en ;
+    rdfs:comment "Human-readable note about an authorization"@en ;
+    rdfs:domain lws:Authorization ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy lws: .
+
+# Feature Instances
+lws:ConditionalAccess a owl:Thing ;
+    rdfs:label "Conditional Access"@en ;
+    rdfs:comment "Support for condition-based access control"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:GroupPrincipals a owl:Thing ;
+    rdfs:label "Group Principals"@en ;
+    rdfs:comment "Support for group-based access control"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:TemporalAccess a owl:Thing ;
+    rdfs:label "Temporal Access"@en ;
+    rdfs:comment "Support for time-based access control"@en ;
+    rdfs:isDefinedBy lws: .
+
+lws:DelegatedAccess a owl:Thing ;
+    rdfs:label "Delegated Access"@en ;
+    rdfs:comment "Support for delegated/on-behalf-of access"@en ;
+    rdfs:isDefinedBy lws: .
