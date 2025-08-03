@@ -1,0 +1,110 @@
+@prefix abac: <https://www.w3.org/ns/auth/abac#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+
+<https://www.w3.org/ns/auth/abac> a owl:Ontology ;
+  rdfs:label "Attribute-Based Access Control Vocabulary"@en ;
+  dct:description "A lightweight vocabulary for describing ABAC policies and evaluation artefacts in RDF."@en ;
+  vann:preferredNamespacePrefix "abac" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/abac#"^^xsd:anyURI ;
+  dct:issued "2024-08-03"^^xsd:date .
+
+#################
+#   Classes
+#################
+
+abac:Subject a rdfs:Class ;
+  rdfs:label "Subject"@en .
+
+abac:Attribute a rdfs:Class ;
+  rdfs:label "Attribute"@en ;
+  rdfs:comment "An atomic characteristic that can be possessed by a Subject or referenced by a Policy"@en .
+
+abac:Policy a rdfs:Class ;
+  rdfs:label "Policy"@en ;
+  rdfs:comment "A rule that constrains access based on required attributes, actions and resources."@en .
+
+abac:Resource a rdfs:Class ;
+  rdfs:label "Resource"@en .
+
+abac:Action a rdfs:Class ;
+  rdfs:label "Action"@en .
+
+abac:Effect a rdfs:Class ;
+  rdfs:label "Effect"@en .
+
+abac:Allow a abac:Effect ;
+  rdfs:label "Allow"@en .
+
+abac:Deny a abac:Effect ;
+  rdfs:label "Deny"@en .
+
+abac:AccessRequest a rdfs:Class ;
+  rdfs:label "Access Request"@en .
+
+abac:Decision a rdfs:Class ;
+  rdfs:label "Decision"@en .
+
+abac:Allowed a abac:Decision ;
+  rdfs:label "Allowed"@en .
+
+abac:DeniedByExplicitDeny a abac:Decision ;
+  rdfs:label "Denied by explicit deny"@en .
+
+abac:DeniedImplicitly a abac:Decision ;
+  rdfs:label "Denied implicitly"@en .
+
+#################
+#   Properties
+#################
+
+abac:hasAttribute a rdf:Property ;
+  rdfs:label "has attribute"@en ;
+  rdfs:domain abac:Subject ;
+  rdfs:range  abac:Attribute .
+
+abac:policyRequiresAttribute a rdf:Property ;
+  rdfs:label "requires attribute"@en ;
+  rdfs:domain abac:Policy ;
+  rdfs:range  abac:Attribute .
+
+abac:policyAction a rdf:Property ;
+  rdfs:label "policy action"@en ;
+  rdfs:domain abac:Policy ;
+  rdfs:range  abac:Action .
+
+abac:policyResource a rdf:Property ;
+  rdfs:label "policy resource"@en ;
+  rdfs:domain abac:Policy ;
+  rdfs:range  abac:Resource .
+
+abac:effect a rdf:Property ;
+  rdfs:label "effect"@en ;
+  rdfs:domain abac:Policy ;
+  rdfs:range abac:Effect .
+
+# AccessRequest props ------------------------------------------------------
+
+abac:requestedBy a rdf:Property ;
+  rdfs:label "requested by"@en ;
+  rdfs:domain abac:AccessRequest ;
+  rdfs:range abac:Subject .
+
+abac:requestedAction a rdf:Property ;
+  rdfs:label "requested action"@en ;
+  rdfs:domain abac:AccessRequest ;
+  rdfs:range abac:Action .
+
+abac:requestedResource a rdf:Property ;
+  rdfs:label "requested resource"@en ;
+  rdfs:domain abac:AccessRequest ;
+  rdfs:range abac:Resource .
+
+abac:decision a rdf:Property ;
+  rdfs:label "decision"@en ;
+  rdfs:domain abac:AccessRequest ;
+  rdfs:range abac:Decision .

@@ -1,0 +1,47 @@
+@prefix rbac: <https://www.w3.org/ns/auth/rbac#> .
+@prefix log:    <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+
+#################################################################
+#  Minimal RBAC evaluation rules                                 
+#                                                                 
+#  Request pattern:                                               
+#     ?req  rbac:requestedBy       ?sub ;                         
+#           rbac:requestedAction   ?act ;                         
+#           rbac:requestedResource ?res .                         
+#                                                                 
+#  The rules assign exactly one rbac:decision to every request.   
+#  Precedence: Explicit Deny > Allow > Default Deny               
+#################################################################
+
+### Rule 1 – explicit deny via role permission ----------------------------
+{   ?req  rbac:requestedBy       ?sub ;
+        rbac:requestedAction   ?act ;
+        rbac:requestedResource ?res .
+
+    ?sub  rbac:assignedRole ?role .
+    ?role rbac:roleHasPermission ?perm .
+    ?perm rbac:effect rbac:Deny ;
+          rbac:permissionAction   ?act ;
+          rbac:permissionResource ?res .
+} => { ?req rbac:decision rbac:DeniedByExplicitDeny . } .
+
+### Rule 2 – allow when at least one matching Allow and no explicit deny ---
+{   ?req  rbac:requestedBy       ?sub ;
+        rbac:requestedAction   ?act ;
+        rbac:requestedResource ?res .
+
+    ?sub  rbac:assignedRole ?role .
+    ?role rbac:roleHasPermission ?perm .
+    ?perm rbac:effect rbac:Allow ;
+          rbac:permissionAction   ?act ;
+          rbac:permissionResource ?res .
+
+    not { ?req rbac:decision rbac:DeniedByExplicitDeny . }
+} => { ?req rbac:decision rbac:Allowed . } .
+
+### Rule 3 – default implicit deny ----------------------------------------
+{   ?req a rbac:AccessRequest .
+    not { ?req rbac:decision ?any . }
+} => { ?req rbac:decision rbac:DeniedImplicitly . } .

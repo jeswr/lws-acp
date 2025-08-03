@@ -1,0 +1,123 @@
+@prefix rabac: <https://www.w3.org/ns/auth/rabac#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+
+<https://www.w3.org/ns/auth/rabac> a owl:Ontology ;
+  rdfs:label "Role & Attribute Based Access Control Vocabulary"@en ;
+  dct:description "A vocabulary that combines RBAC and ABAC concepts, allowing policies scoped by both roles and attributes."@en ;
+  vann:preferredNamespacePrefix "rabac" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/rabac#"^^xsd:anyURI ;
+  dct:issued "2024-08-03"^^xsd:date .
+
+#################
+#   Classes
+#################
+
+rabac:Subject a rdfs:Class ;
+  rdfs:label "Subject"@en .
+
+rabac:Role a rdfs:Class ;
+  rdfs:label "Role"@en .
+
+rabac:Attribute a rdfs:Class ;
+  rdfs:label "Attribute"@en .
+
+rabac:Policy a rdfs:Class ;
+  rdfs:label "Policy"@en .
+
+rabac:Resource a rdfs:Class ;
+  rdfs:label "Resource"@en .
+
+rabac:Action a rdfs:Class ;
+  rdfs:label "Action"@en .
+
+rabac:Effect a rdfs:Class ;
+  rdfs:label "Effect"@en .
+
+rabac:Allow a rabac:Effect ;
+  rdfs:label "Allow"@en .
+
+rabac:Deny a rabac:Effect ;
+  rdfs:label "Deny"@en .
+
+rabac:AccessRequest a rdfs:Class ;
+  rdfs:label "Access Request"@en .
+
+rabac:Decision a rdfs:Class ;
+  rdfs:label "Decision"@en .
+
+rabac:Allowed a rabac:Decision ;
+  rdfs:label "Allowed"@en .
+
+rabac:DeniedByExplicitDeny a rabac:Decision ;
+  rdfs:label "Denied by explicit deny"@en .
+
+rabac:DeniedImplicitly a rabac:Decision ;
+  rdfs:label "Denied implicitly"@en .
+
+#################
+#   Properties
+#################
+
+rabac:assignedRole a rdf:Property ;
+  rdfs:label "assigned role"@en ;
+  rdfs:domain rabac:Subject ;
+  rdfs:range  rabac:Role .
+
+rabac:hasAttribute a rdf:Property ;
+  rdfs:label "has attribute"@en ;
+  rdfs:domain rabac:Subject ;
+  rdfs:range  rabac:Attribute .
+
+# Policy predicates -------------------------------------------------------
+
+rabac:policyRole a rdf:Property ;
+  rdfs:label "policy role"@en ;
+  rdfs:domain rabac:Policy ;
+  rdfs:range  rabac:Role .
+
+rabac:policyRequiresAttribute a rdf:Property ;
+  rdfs:label "policy requires attribute"@en ;
+  rdfs:domain rabac:Policy ;
+  rdfs:range rabac:Attribute .
+
+rabac:policyAction a rdf:Property ;
+  rdfs:label "policy action"@en ;
+  rdfs:domain rabac:Policy ;
+  rdfs:range rabac:Action .
+
+rabac:policyResource a rdf:Property ;
+  rdfs:label "policy resource"@en ;
+  rdfs:domain rabac:Policy ;
+  rdfs:range rabac:Resource .
+
+rabac:effect a rdf:Property ;
+  rdfs:label "effect"@en ;
+  rdfs:domain rabac:Policy ;
+  rdfs:range rabac:Effect .
+
+# AccessRequest props ------------------------------------------------------
+
+rabac:requestedBy a rdf:Property ;
+  rdfs:label "requested by"@en ;
+  rdfs:domain rabac:AccessRequest ;
+  rdfs:range rabac:Subject .
+
+rabac:requestedAction a rdf:Property ;
+  rdfs:label "requested action"@en ;
+  rdfs:domain rabac:AccessRequest ;
+  rdfs:range rabac:Action .
+
+rabac:requestedResource a rdf:Property ;
+  rdfs:label "requested resource"@en ;
+  rdfs:domain rabac:AccessRequest ;
+  rdfs:range rabac:Resource .
+
+rabac:decision a rdf:Property ;
+  rdfs:label "decision"@en ;
+  rdfs:domain rabac:AccessRequest ;
+  rdfs:range rabac:Decision .

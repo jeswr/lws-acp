@@ -1,0 +1,101 @@
+@prefix iac: <https://www.w3.org/ns/auth/iac#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+
+<https://www.w3.org/ns/auth/iac> a owl:Ontology ;
+  rdfs:label "Identity-Based Access Control Vocabulary"@en ;
+  dct:description "A minimal vocabulary for policies that attach permissions directly to identities (subjects)."@en ;
+  vann:preferredNamespacePrefix "iac" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/iac#"^^xsd:anyURI ;
+  dct:issued "2024-08-03"^^xsd:date .
+
+#################
+#   Classes
+#################
+
+iac:Identity a rdfs:Class ;
+  rdfs:label "Identity"@en ;
+  rdfs:comment "A uniquely identifiable principal such as a user, service or device."@en .
+
+iac:Permission a rdfs:Class ;
+  rdfs:label "Permission"@en .
+
+iac:Resource a rdfs:Class ;
+  rdfs:label "Resource"@en .
+
+iac:Action a rdfs:Class ;
+  rdfs:label "Action"@en .
+
+iac:Effect a rdfs:Class ;
+  rdfs:label "Effect"@en .
+
+iac:Allow a iac:Effect ;
+  rdfs:label "Allow"@en .
+
+iac:Deny a iac:Effect ;
+  rdfs:label "Deny"@en .
+
+iac:AccessRequest a rdfs:Class ;
+  rdfs:label "Access Request"@en .
+
+iac:Decision a rdfs:Class ;
+  rdfs:label "Decision"@en .
+
+iac:Allowed a iac:Decision ;
+  rdfs:label "Allowed"@en .
+
+iac:DeniedByExplicitDeny a iac:Decision ;
+  rdfs:label "Denied by explicit deny"@en .
+
+iac:DeniedImplicitly a iac:Decision ;
+  rdfs:label "Denied implicitly"@en .
+
+#################
+#   Properties
+#################
+
+iac:hasPermission a rdf:Property ;
+  rdfs:label "has permission"@en ;
+  rdfs:domain iac:Identity ;
+  rdfs:range  iac:Permission .
+
+iac:permissionAction a rdf:Property ;
+  rdfs:label "permission action"@en ;
+  rdfs:domain iac:Permission ;
+  rdfs:range iac:Action .
+
+iac:permissionResource a rdf:Property ;
+  rdfs:label "permission resource"@en ;
+  rdfs:domain iac:Permission ;
+  rdfs:range iac:Resource .
+
+iac:effect a rdf:Property ;
+  rdfs:label "effect"@en ;
+  rdfs:domain iac:Permission ;
+  rdfs:range iac:Effect .
+
+# AccessRequest props ------------------------------------------------------
+
+iac:requestedBy a rdf:Property ;
+  rdfs:label "requested by"@en ;
+  rdfs:domain iac:AccessRequest ;
+  rdfs:range iac:Identity .
+
+iac:requestedAction a rdf:Property ;
+  rdfs:label "requested action"@en ;
+  rdfs:domain iac:AccessRequest ;
+  rdfs:range iac:Action .
+
+iac:requestedResource a rdf:Property ;
+  rdfs:label "requested resource"@en ;
+  rdfs:domain iac:AccessRequest ;
+  rdfs:range iac:Resource .
+
+iac:decision a rdf:Property ;
+  rdfs:label "decision"@en ;
+  rdfs:domain iac:AccessRequest ;
+  rdfs:range iac:Decision .

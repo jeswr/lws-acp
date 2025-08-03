@@ -1,0 +1,37 @@
+@prefix iac: <https://www.w3.org/ns/auth/iac#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+#################################################################
+# Identity-Based Access Control – reasoning rules                
+#################################################################
+
+### Rule 1 – explicit deny ----------------------------------------------
+{   ?req iac:requestedBy ?id ;
+        iac:requestedAction ?act ;
+        iac:requestedResource ?res .
+
+    ?id  iac:hasPermission ?perm .
+    ?perm iac:effect iac:Deny ;
+          iac:permissionAction   ?act ;
+          iac:permissionResource ?res .
+} => { ?req iac:decision iac:DeniedByExplicitDeny . } .
+
+### Rule 2 – allow --------------------------------------------------------
+{   ?req iac:requestedBy ?id ;
+        iac:requestedAction ?act ;
+        iac:requestedResource ?res .
+
+    ?id  iac:hasPermission ?perm .
+    ?perm iac:effect iac:Allow ;
+          iac:permissionAction   ?act ;
+          iac:permissionResource ?res .
+
+    not { ?req iac:decision iac:DeniedByExplicitDeny . }
+} => { ?req iac:decision iac:Allowed . } .
+
+### Rule 3 – default deny -------------------------------------------------
+{   ?req a iac:AccessRequest .
+    not { ?req iac:decision ?any . }
+} => { ?req iac:decision iac:DeniedImplicitly . } .
