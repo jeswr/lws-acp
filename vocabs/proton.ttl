@@ -1,0 +1,55 @@
+@prefix proton: <https://www.w3.org/ns/auth/proton#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vann/> .
+
+<https://www.w3.org/ns/auth/proton> a owl:Ontology ;
+  rdfs:label "Proton Drive Access Control Vocabulary"@en ;
+  dct:description "Vocabulary capturing Proton Drive share link & collaborator roles."@en ;
+  vann:preferredNamespacePrefix "proton" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/proton#"^^xsd:anyURI ;
+  dct:issued "2025-08-03"^^xsd:date ;
+  rdfs:seeAlso <https://proton.me/support/share-files-folders-proton-drive> .
+
+proton:Permission a rdfs:Class .
+proton:Role       a rdfs:Class .
+proton:Principal  a rdfs:Class .
+proton:User       a rdfs:Class ; rdfs:subClassOf proton:Principal .
+proton:LinkGuest  a rdfs:Class ; rdfs:subClassOf proton:Principal .
+
+proton:Resource   a rdfs:Class .
+proton:File       a rdfs:Class ; rdfs:subClassOf proton:Resource .
+proton:Folder     a rdfs:Class ; rdfs:subClassOf proton:Resource .
+
+proton:Action a rdfs:Class .
+  proton:View   a proton:Action .
+  proton:Edit   a proton:Action .
+  proton:Upload a proton:Action .
+  proton:Share  a proton:Action .
+
+proton:AccessRequest a rdfs:Class .
+
+# Properties
+proton:hasPermission a rdf:Property ; rdfs:domain proton:Resource ; rdfs:range proton:Permission .
+proton:principal     a rdf:Property ; rdfs:domain proton:Permission ; rdfs:range proton:Principal .
+proton:role          a rdf:Property ; rdfs:domain proton:Permission ; rdfs:range proton:Role .
+proton:permits       a rdf:Property ; rdfs:domain proton:Role ; rdfs:range proton:Action .
+proton:requestedBy   a rdf:Property ; rdfs:domain proton:AccessRequest ; rdfs:range proton:Principal .
+proton:requestedAction a rdf:Property ; rdfs:domain proton:AccessRequest ; rdfs:range proton:Action .
+proton:requestedResource a rdf:Property ; rdfs:domain proton:AccessRequest ; rdfs:range proton:Resource .
+proton:decision      a rdf:Property ; rdfs:domain proton:AccessRequest .
+
+# Roles
+proton:Owner   a proton:Role .
+proton:Editor  a proton:Role .
+proton:Viewer  a proton:Role .
+proton:LinkViewer a proton:Role .
+
+# Matrix
+proton:Owner  proton:permits proton:View , proton:Edit , proton:Upload , proton:Share .
+proton:Editor proton:permits proton:View , proton:Edit , proton:Upload .
+proton:Viewer proton:permits proton:View .
+proton:LinkViewer proton:permits proton:View .

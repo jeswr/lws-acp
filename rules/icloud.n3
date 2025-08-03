@@ -1,0 +1,22 @@
+@prefix icloud: <https://www.w3.org/ns/auth/icloud#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+###################################################################
+#  Simplified iCloud permission reasoning                         #
+###################################################################
+
+{
+  ?req icloud:requestedBy ?p ;
+       icloud:requestedAction ?a ;
+       icloud:requestedResource ?r .
+
+  ?r icloud:hasPermission ?perm .
+  ?perm icloud:principal ?p ;
+        icloud:role ?role .
+  ?role icloud:permits ?a .
+} => { ?req icloud:decision icloud:Allowed . } .
+
+{
+  ?req a icloud:AccessRequest .
+  not { ?req icloud:decision ?any . }
+} => { ?req icloud:decision icloud:Denied . } .

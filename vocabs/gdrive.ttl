@@ -1,0 +1,79 @@
+@prefix gdrive: <https://www.w3.org/ns/auth/gdrive#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vann/> .
+
+<https://www.w3.org/ns/auth/gdrive> a owl:Ontology ;
+  rdfs:label "Google Drive Access Control Vocabulary"@en ;
+  dct:description "Concepts in the Google Drive permission model expressed for Linked Web Storage."@en ;
+  vann:preferredNamespacePrefix "gdrive" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/gdrive#"^^xsd:anyURI ;
+  dct:issued "2025-08-03"^^xsd:date ;
+  rdfs:seeAlso <https://developers.google.com/drive/api/guides/ref-roles> .
+
+#########
+# CLASSES
+#########
+
+gdrive:Permission  a rdfs:Class ; rdfs:label "Permission"@en .
+gdrive:Role         a rdfs:Class ; rdfs:label "Role"@en .
+gdrive:Principal    a rdfs:Class ; rdfs:label "Principal"@en .
+gdrive:User         a rdfs:Class ; rdfs:subClassOf gdrive:Principal ; rdfs:label "User"@en .
+gdrive:Group        a rdfs:Class ; rdfs:subClassOf gdrive:Principal ; rdfs:label "Group"@en .
+gdrive:Domain       a rdfs:Class ; rdfs:subClassOf gdrive:Principal ; rdfs:label "Domain"@en .
+gdrive:Anyone       a rdfs:Class ; rdfs:subClassOf gdrive:Principal ; rdfs:label "Anyone"@en .
+
+gdrive:Resource     a rdfs:Class ; rdfs:label "Drive resource"@en .
+gdrive:DriveFile    a rdfs:Class ; rdfs:subClassOf gdrive:Resource ; rdfs:label "Drive file"@en .
+gdrive:DriveFolder  a rdfs:Class ; rdfs:subClassOf gdrive:Resource ; rdfs:label "Drive folder"@en .
+gdrive:SharedDrive  a rdfs:Class ; rdfs:subClassOf gdrive:Resource ; rdfs:label "Shared Drive"@en .
+
+gdrive:Action       a rdfs:Class ; rdfs:label "Action"@en .
+  gdrive:View        a gdrive:Action ; rdfs:label "view"@en .
+  gdrive:Comment     a gdrive:Action ; rdfs:label "comment"@en .
+  gdrive:Edit        a gdrive:Action ; rdfs:label "edit"@en .
+  gdrive:Organize    a gdrive:Action ; rdfs:label "organize"@en .
+  gdrive:Share       a gdrive:Action ; rdfs:label "share"@en .
+  gdrive:Delete      a gdrive:Action ; rdfs:label "delete"@en .
+
+gdrive:AccessRequest a rdfs:Class ; rdfs:label "Access request"@en .
+
+##############
+# PROPERTIES
+##############
+
+gdrive:hasPermission    a rdf:Property ; rdfs:domain gdrive:Resource ; rdfs:range gdrive:Permission ; rdfs:label "has permission"@en .
+gdrive:principal        a rdf:Property ; rdfs:domain gdrive:Permission ; rdfs:range gdrive:Principal ; rdfs:label "principal"@en .
+gdrive:role             a rdf:Property ; rdfs:domain gdrive:Permission ; rdfs:range gdrive:Role ; rdfs:label "role"@en .
+gdrive:permits          a rdf:Property ; rdfs:domain gdrive:Role ; rdfs:range gdrive:Action ; rdfs:label "permits"@en .
+
+gdrive:requestedBy      a rdf:Property ; rdfs:domain gdrive:AccessRequest ; rdfs:range gdrive:Principal .
+gdrive:requestedAction  a rdf:Property ; rdfs:domain gdrive:AccessRequest ; rdfs:range gdrive:Action .
+gdrive:requestedResource a rdf:Property ; rdfs:domain gdrive:AccessRequest ; rdfs:range gdrive:Resource .
+gdrive:decision         a rdf:Property ; rdfs:domain gdrive:AccessRequest ; rdfs:label "decision"@en .
+
+################
+# ROLE INSTANCES
+################
+
+gdrive:Owner           a gdrive:Role ; rdfs:label "Owner"@en .
+gdrive:Organizer       a gdrive:Role ; rdfs:label "Organizer"@en .
+gdrive:FileOrganizer   a gdrive:Role ; rdfs:label "File Organizer"@en .
+gdrive:Writer          a gdrive:Role ; rdfs:label "Writer"@en .
+gdrive:Commenter       a gdrive:Role ; rdfs:label "Commenter"@en .
+gdrive:Reader          a gdrive:Role ; rdfs:label "Reader"@en .
+gdrive:PublishedReader a gdrive:Role ; rdfs:label "Published reader"@en .
+
+# Simplified role → action matrix
+#gdrive:permits is additive – a role that permits a superset of actions implicitly permits lower-level actions.
+
+gdrive:Owner           gdrive:permits gdrive:View , gdrive:Comment , gdrive:Edit , gdrive:Organize , gdrive:Share , gdrive:Delete .
+gdrive:Organizer       gdrive:permits gdrive:View , gdrive:Comment , gdrive:Edit , gdrive:Organize , gdrive:Share .
+gdrive:FileOrganizer   gdrive:permits gdrive:View , gdrive:Comment , gdrive:Edit , gdrive:Organize .
+gdrive:Writer          gdrive:permits gdrive:View , gdrive:Comment , gdrive:Edit .
+gdrive:Commenter       gdrive:permits gdrive:View , gdrive:Comment .
+gdrive:Reader          gdrive:permits gdrive:View .
+gdrive:PublishedReader gdrive:permits gdrive:View .

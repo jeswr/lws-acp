@@ -1,0 +1,8 @@
+@prefix sync: <https://www.w3.org/ns/auth/sync#> .
+{ ?req sync:requestedBy ?p ; sync:requestedAction ?a ; sync:requestedResource ?r .
+  ?r sync:hasPermission ?perm .
+  ?perm sync:principal ?p ; sync:role ?role .
+  ?role sync:permits ?a .
+} => { ?req sync:decision sync:Allowed . } .
+
+{ ?req a sync:AccessRequest . not { ?req sync:decision ?d . } } => { ?req sync:decision sync:Denied . } .

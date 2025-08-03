@@ -1,0 +1,54 @@
+@prefix icloud: <https://www.w3.org/ns/auth/icloud#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vann/> .
+
+<https://www.w3.org/ns/auth/icloud> a owl:Ontology ;
+  rdfs:label "iCloud Drive Access Control Vocabulary"@en ;
+  dct:description "Simplified representation of iCloud Drive collaborative sharing roles."@en ;
+  vann:preferredNamespacePrefix "icloud" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/icloud#"^^xsd:anyURI ;
+  dct:issued "2025-08-03"^^xsd:date ;
+  rdfs:seeAlso <https://support.apple.com/guide/icloud/share-and-collaborate-iclu1949ee4a/web> .
+
+icloud:Permission a rdfs:Class ; rdfs:label "Permission"@en .
+icloud:Role       a rdfs:Class ; rdfs:label "Role"@en .
+icloud:Principal  a rdfs:Class ; rdfs:label "Principal"@en .
+icloud:User       a rdfs:Class ; rdfs:subClassOf icloud:Principal .
+icloud:LinkGuest  a rdfs:Class ; rdfs:subClassOf icloud:Principal ; rdfs:label "Anyone with link"@en .
+
+icloud:Resource a rdfs:Class ; rdfs:label "iCloud resource"@en .
+icloud:File     a rdfs:Class ; rdfs:subClassOf icloud:Resource .
+icloud:Folder   a rdfs:Class ; rdfs:subClassOf icloud:Resource .
+
+icloud:Action   a rdfs:Class .
+  icloud:View   a icloud:Action ; rdfs:label "view"@en .
+  icloud:Edit   a icloud:Action ; rdfs:label "edit"@en .
+  icloud:Upload a icloud:Action ; rdfs:label "upload"@en .
+  icloud:Share  a icloud:Action ; rdfs:label "share"@en .
+
+icloud:AccessRequest a rdfs:Class .
+
+icloud:hasPermission a rdf:Property ; rdfs:domain icloud:Resource ; rdfs:range icloud:Permission .
+icloud:principal     a rdf:Property ; rdfs:domain icloud:Permission ; rdfs:range icloud:Principal .
+icloud:role          a rdf:Property ; rdfs:domain icloud:Permission ; rdfs:range icloud:Role .
+icloud:permits       a rdf:Property ; rdfs:domain icloud:Role ; rdfs:range icloud:Action .
+icloud:requestedBy   a rdf:Property ; rdfs:domain icloud:AccessRequest ; rdfs:range icloud:Principal .
+icloud:requestedAction a rdf:Property ; rdfs:domain icloud:AccessRequest ; rdfs:range icloud:Action .
+icloud:requestedResource a rdf:Property ; rdfs:domain icloud:AccessRequest ; rdfs:range icloud:Resource .
+icloud:decision      a rdf:Property ; rdfs:domain icloud:AccessRequest .
+
+# Roles
+icloud:Owner             a icloud:Role ; rdfs:label "Owner"@en .
+icloud:ParticipantRW     a icloud:Role ; rdfs:label "Participant (read-write)"@en .
+icloud:ParticipantRO     a icloud:Role ; rdfs:label "Participant (read-only)"@en .
+icloud:PublicLinkViewer  a icloud:Role ; rdfs:label "Anyone (view)"@en .
+
+# Role action matrix
+icloud:Owner         icloud:permits icloud:View , icloud:Edit , icloud:Upload , icloud:Share .
+icloud:ParticipantRW icloud:permits icloud:View , icloud:Edit , icloud:Upload .
+icloud:ParticipantRO icloud:permits icloud:View .
+icloud:PublicLinkViewer icloud:permits icloud:View .

@@ -1,0 +1,51 @@
+@prefix mega: <https://www.w3.org/ns/auth/mega#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vann/> .
+
+<https://www.w3.org/ns/auth/mega> a owl:Ontology ;
+  rdfs:label "MEGA.nz Permission Vocabulary"@en ;
+  dct:description "Roles for folder sharing in MEGA.nz (full, read-write, read-only)."@en ;
+  vann:preferredNamespacePrefix "mega" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/mega#"^^xsd:anyURI ;
+  dct:issued "2025-08-03"^^xsd:date ;
+  rdfs:seeAlso <https://help.mega.nz/hc/en-us/articles/360042487013-Permissions-for-shared-folders> .
+
+mega:Permission a rdfs:Class .
+mega:Role a rdfs:Class .
+mega:Principal a rdfs:Class .
+mega:User a rdfs:Class ; rdfs:subClassOf mega:Principal .
+mega:LinkGuest a rdfs:Class ; rdfs:subClassOf mega:Principal .
+
+mega:Resource a rdfs:Class .
+mega:File a rdfs:Class ; rdfs:subClassOf mega:Resource .
+mega:Folder a rdfs:Class ; rdfs:subClassOf mega:Resource .
+
+mega:Action a rdfs:Class .
+  mega:View a mega:Action .
+  mega:Edit a mega:Action .
+  mega:Upload a mega:Action .
+  mega:Share a mega:Action .
+
+mega:AccessRequest a rdfs:Class .
+
+mega:hasPermission a rdf:Property ; rdfs:domain mega:Resource ; rdfs:range mega:Permission .
+mega:principal a rdf:Property ; rdfs:domain mega:Permission ; rdfs:range mega:Principal .
+mega:role a rdf:Property ; rdfs:domain mega:Permission ; rdfs:range mega:Role .
+mega:permits a rdf:Property ; rdfs:domain mega:Role ; rdfs:range mega:Action .
+
+mega:requestedBy a rdf:Property ; rdfs:domain mega:AccessRequest ; rdfs:range mega:Principal .
+mega:requestedAction a rdf:Property ; rdfs:domain mega:AccessRequest ; rdfs:range mega:Action .
+mega:requestedResource a rdf:Property ; rdfs:domain mega:AccessRequest ; rdfs:range mega:Resource .
+mega:decision a rdf:Property ; rdfs:domain mega:AccessRequest .
+
+mega:FullAccess a mega:Role .
+mega:ReadWrite a mega:Role .
+mega:ReadOnly a mega:Role .
+
+mega:FullAccess mega:permits mega:View , mega:Edit , mega:Upload , mega:Share .
+mega:ReadWrite mega:permits mega:View , mega:Edit , mega:Upload .
+mega:ReadOnly mega:permits mega:View .
