@@ -1,0 +1,47 @@
+@prefix rabac: <https://www.w3.org/ns/auth/rabac#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+#################################################################
+# RABAC evaluation rules (role + attribute)                      
+#################################################################
+
+### Rule 1 – explicit deny ----------------------------------------------
+{   ?req rabac:requestedBy ?sub ;
+        rabac:requestedAction ?act ;
+        rabac:requestedResource ?res .
+
+    ?pol a rabac:Policy ;
+         rabac:effect rabac:Deny ;
+         rabac:policyAction ?act ;
+         rabac:policyResource ?res ;
+         rabac:policyRole ?role ;
+         rabac:policyRequiresAttribute ?attr .
+
+    ?sub rabac:assignedRole ?role .
+    ?sub rabac:hasAttribute ?attr .
+} => { ?req rabac:decision rabac:DeniedByExplicitDeny . } .
+
+### Rule 2 – allow --------------------------------------------------------
+{   ?req rabac:requestedBy ?sub ;
+        rabac:requestedAction ?act ;
+        rabac:requestedResource ?res .
+
+    ?pol a rabac:Policy ;
+         rabac:effect rabac:Allow ;
+         rabac:policyAction ?act ;
+         rabac:policyResource ?res ;
+         rabac:policyRole ?role ;
+         rabac:policyRequiresAttribute ?attr .
+
+    ?sub rabac:assignedRole ?role .
+    ?sub rabac:hasAttribute ?attr .
+
+    not { ?req rabac:decision rabac:DeniedByExplicitDeny . }
+} => { ?req rabac:decision rabac:Allowed . } .
+
+### Rule 3 – default deny -------------------------------------------------
+{   ?req a rabac:AccessRequest .
+    not { ?req rabac:decision ?any . }
+} => { ?req rabac:decision rabac:DeniedImplicitly . } .

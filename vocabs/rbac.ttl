@@ -1,0 +1,121 @@
+@prefix rbac: <https://www.w3.org/ns/auth/rbac#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+
+<https://www.w3.org/ns/auth/rbac> a owl:Ontology ;
+  rdfs:label "Role-Based Access Control Vocabulary"@en ;
+  dct:description "A minimal vocabulary for expressing Role-Based Access Control (RBAC) policies, access requests and evaluation results in RDF."@en ;
+  vann:preferredNamespacePrefix "rbac" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/rbac#"^^xsd:anyURI ;
+  dct:issued "2024-08-03"^^xsd:date .
+
+#################
+#   Classes
+#################
+
+rbac:Subject a rdfs:Class ;
+  rdfs:label "Subject"@en ;
+  rdfs:comment "An actor (user, process, service, …) that can issue an access request."@en .
+
+rbac:Role a rdfs:Class ;
+  rdfs:label "Role"@en ;
+  rdfs:comment "A named collection of permissions."@en .
+
+rbac:Permission a rdfs:Class ;
+  rdfs:label "Permission"@en ;
+  rdfs:comment "A right to perform an Action on a Resource with a given Effect (Allow/Deny)."@en .
+
+rbac:Resource a rdfs:Class ;
+  rdfs:label "Resource"@en ;
+  rdfs:comment "Anything that can be the target of an access request."@en .
+
+rbac:Action a rdfs:Class ;
+  rdfs:label "Action"@en ;
+  rdfs:comment "An operation that can be performed on a Resource (e.g., read, write, delete)."@en .
+
+rbac:Effect a rdfs:Class ;
+  rdfs:label "Effect"@en ;
+  rdfs:comment "The outcome encoded by a Permission or produced by policy evaluation."@en .
+
+rbac:Allow a rbac:Effect ;
+  rdfs:label "Allow"@en .
+
+rbac:Deny a rbac:Effect ;
+  rdfs:label "Deny"@en .
+
+# Runtime artefacts ---------------------------------------------------------
+
+rbac:AccessRequest a rdfs:Class ;
+  rdfs:label "Access Request"@en ;
+  rdfs:comment "A specific attempt by a Subject to perform an Action on a Resource. Used as input to the RBAC evaluation rules."@en .
+
+rbac:Decision a rdfs:Class ;
+  rdfs:label "Decision"@en ;
+  rdfs:comment "The result returned by the evaluation engine for a given AccessRequest."@en .
+
+rbac:Allowed a rbac:Decision ;
+  rdfs:label "Allowed"@en .
+
+rbac:DeniedByExplicitDeny a rbac:Decision ;
+  rdfs:label "Denied by explicit deny"@en .
+
+rbac:DeniedImplicitly a rbac:Decision ;
+  rdfs:label "Denied implicitly (no matching allow)"@en .
+
+#################
+#   Properties
+#################
+
+rbac:assignedRole a rdf:Property ;
+  rdfs:label "assigned role"@en ;
+  rdfs:comment "Links a Subject to a Role that it possesses."@en ;
+  rdfs:domain rbac:Subject ;
+  rdfs:range rbac:Role .
+
+rbac:roleHasPermission a rdf:Property ;
+  rdfs:label "role has permission"@en ;
+  rdfs:comment "Associates a Role with a Permission it confers."@en ;
+  rdfs:domain rbac:Role ;
+  rdfs:range rbac:Permission .
+
+rbac:permissionAction a rdf:Property ;
+  rdfs:label "permission action"@en ;
+  rdfs:domain rbac:Permission ;
+  rdfs:range rbac:Action .
+
+rbac:permissionResource a rdf:Property ;
+  rdfs:label "permission resource"@en ;
+  rdfs:domain rbac:Permission ;
+  rdfs:range rbac:Resource .
+
+rbac:effect a rdf:Property ;
+  rdfs:label "effect"@en ;
+  rdfs:comment "The Effect (Allow or Deny) encoded in a Permission."@en ;
+  rdfs:domain rbac:Permission ;
+  rdfs:range rbac:Effect .
+
+# Properties for AccessRequest ---------------------------------------------
+
+rbac:requestedBy a rdf:Property ;
+  rdfs:label "requested by"@en ;
+  rdfs:domain rbac:AccessRequest ;
+  rdfs:range rbac:Subject .
+
+rbac:requestedAction a rdf:Property ;
+  rdfs:label "requested action"@en ;
+  rdfs:domain rbac:AccessRequest ;
+  rdfs:range rbac:Action .
+
+rbac:requestedResource a rdf:Property ;
+  rdfs:label "requested resource"@en ;
+  rdfs:domain rbac:AccessRequest ;
+  rdfs:range rbac:Resource .
+
+rbac:decision a rdf:Property ;
+  rdfs:label "decision"@en ;
+  rdfs:domain rbac:AccessRequest ;
+  rdfs:range rbac:Decision .

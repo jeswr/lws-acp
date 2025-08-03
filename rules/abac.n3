@@ -1,0 +1,48 @@
+@prefix abac: <https://www.w3.org/ns/auth/abac#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+#################################################################
+# Minimal ABAC evaluation logic                                   
+#                                                                 
+# Request pattern:                                                 
+#   ?req abac:requestedBy ?sub ;                                   
+#        abac:requestedAction ?act ;                               
+#        abac:requestedResource ?res .                             
+#################################################################
+
+### Rule 1 – explicit deny when subject satisfies all requirements ---------
+{   ?req abac:requestedBy ?sub ;
+        abac:requestedAction ?act ;
+        abac:requestedResource ?res .
+
+    ?pol a abac:Policy ;
+         abac:effect abac:Deny ;
+         abac:policyAction ?act ;
+         abac:policyResource ?res ;
+         abac:policyRequiresAttribute ?attr .
+
+    ?sub abac:hasAttribute ?attr .
+} => { ?req abac:decision abac:DeniedByExplicitDeny . } .
+
+### Rule 2 – allow when at least one matching Allow policy and no Deny -----
+{   ?req abac:requestedBy ?sub ;
+        abac:requestedAction ?act ;
+        abac:requestedResource ?res .
+
+    ?pol a abac:Policy ;
+         abac:effect abac:Allow ;
+         abac:policyAction ?act ;
+         abac:policyResource ?res ;
+         abac:policyRequiresAttribute ?attr .
+
+    ?sub abac:hasAttribute ?attr .
+
+    not { ?req abac:decision abac:DeniedByExplicitDeny . }
+} => { ?req abac:decision abac:Allowed . } .
+
+### Rule 3 – default deny --------------------------------------------------
+{   ?req a abac:AccessRequest .
+    not { ?req abac:decision ?any . }
+} => { ?req abac:decision abac:DeniedImplicitly . } .
