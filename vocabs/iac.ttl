@@ -1,0 +1,276 @@
+@prefix iac: <https://www.w3.org/ns/auth/iac#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix cert: <http://www.w3.org/ns/auth/cert#> .
+
+# IAC (Identity-Based Access Control) Vocabulary
+# This vocabulary defines terms for implementing identity-based access control systems
+
+#################################################################
+# Core Classes
+#################################################################
+
+iac:Identity a rdfs:Class ;
+    rdfs:label "Identity"@en ;
+    rdfs:comment """An identity represents a unique, verifiable entity in the system.
+    This can be a person, service, device, or any entity that can be authenticated."""@en ;
+    rdfs:subClassOf foaf:Agent .
+
+iac:Identifier a rdfs:Class ;
+    rdfs:label "Identifier"@en ;
+    rdfs:comment """An identifier is a unique reference to an identity.
+    Multiple identifiers can point to the same identity (e.g., email, username, certificate)."""@en .
+
+iac:Credential a rdfs:Class ;
+    rdfs:label "Credential"@en ;
+    rdfs:comment """A credential is proof of identity used for authentication.
+    This can include passwords, certificates, tokens, biometrics, etc."""@en .
+
+iac:AuthenticationMethod a rdfs:Class ;
+    rdfs:label "Authentication Method"@en ;
+    rdfs:comment "A method used to verify the identity of an entity."@en .
+
+iac:AccessRight a rdfs:Class ;
+    rdfs:label "Access Right"@en ;
+    rdfs:comment """A specific permission granted directly to an identity.
+    Unlike role-based systems, these rights are tied to individual identities."""@en .
+
+iac:Resource a rdfs:Class ;
+    rdfs:label "Resource"@en ;
+    rdfs:comment "A protected object or service that identities can access."@en .
+
+iac:IdentityProvider a rdfs:Class ;
+    rdfs:label "Identity Provider"@en ;
+    rdfs:comment """An entity that creates, maintains, and manages identity information
+    and provides authentication services."""@en .
+
+iac:TrustRelationship a rdfs:Class ;
+    rdfs:label "Trust Relationship"@en ;
+    rdfs:comment "A relationship establishing trust between identities or between identity providers."@en .
+
+iac:IdentityAssertion a rdfs:Class ;
+    rdfs:label "Identity Assertion"@en ;
+    rdfs:comment "A claim made about an identity, typically by an identity provider."@en .
+
+iac:AccessToken a rdfs:Class ;
+    rdfs:label "Access Token"@en ;
+    rdfs:comment "A token that represents the identity's right to access specific resources."@en ;
+    rdfs:subClassOf iac:Credential .
+
+iac:IdentityGroup a rdfs:Class ;
+    rdfs:label "Identity Group"@en ;
+    rdfs:comment """A collection of identities grouped for administrative purposes.
+    Note: Unlike roles, groups are collections of identities, not permissions."""@en .
+
+iac:FederatedIdentity a rdfs:Class ;
+    rdfs:label "Federated Identity"@en ;
+    rdfs:comment "An identity that can be used across multiple systems or domains."@en ;
+    rdfs:subClassOf iac:Identity .
+
+#################################################################
+# Authentication Classes
+#################################################################
+
+iac:PasswordCredential a rdfs:Class ;
+    rdfs:label "Password Credential"@en ;
+    rdfs:comment "A credential based on a secret password."@en ;
+    rdfs:subClassOf iac:Credential .
+
+iac:CertificateCredential a rdfs:Class ;
+    rdfs:label "Certificate Credential"@en ;
+    rdfs:comment "A credential based on a digital certificate."@en ;
+    rdfs:subClassOf iac:Credential .
+
+iac:BiometricCredential a rdfs:Class ;
+    rdfs:label "Biometric Credential"@en ;
+    rdfs:comment "A credential based on biometric data."@en ;
+    rdfs:subClassOf iac:Credential .
+
+iac:TokenCredential a rdfs:Class ;
+    rdfs:label "Token Credential"@en ;
+    rdfs:comment "A credential based on a security token."@en ;
+    rdfs:subClassOf iac:Credential .
+
+iac:MultiFactorAuthentication a rdfs:Class ;
+    rdfs:label "Multi-Factor Authentication"@en ;
+    rdfs:comment "Authentication requiring multiple types of credentials."@en ;
+    rdfs:subClassOf iac:AuthenticationMethod .
+
+#################################################################
+# Properties
+#################################################################
+
+# Identity Properties
+iac:hasIdentifier a rdf:Property ;
+    rdfs:label "has identifier"@en ;
+    rdfs:comment "Associates an identity with its identifiers."@en ;
+    rdfs:domain iac:Identity ;
+    rdfs:range iac:Identifier .
+
+iac:hasCredential a rdf:Property ;
+    rdfs:label "has credential"@en ;
+    rdfs:comment "Associates an identity with its credentials."@en ;
+    rdfs:domain iac:Identity ;
+    rdfs:range iac:Credential .
+
+iac:identityProvider a rdf:Property ;
+    rdfs:label "identity provider"@en ;
+    rdfs:comment "The provider that issued or manages this identity."@en ;
+    rdfs:domain iac:Identity ;
+    rdfs:range iac:IdentityProvider .
+
+iac:isPrimary a rdf:Property ;
+    rdfs:label "is primary"@en ;
+    rdfs:comment "Indicates if this is the primary identifier for an identity."@en ;
+    rdfs:domain iac:Identifier ;
+    rdfs:range xsd:boolean .
+
+iac:identifierType a rdf:Property ;
+    rdfs:label "identifier type"@en ;
+    rdfs:comment "The type of identifier (e.g., email, username, URI)."@en ;
+    rdfs:domain iac:Identifier ;
+    rdfs:range xsd:string .
+
+iac:identifierValue a rdf:Property ;
+    rdfs:label "identifier value"@en ;
+    rdfs:comment "The actual value of the identifier."@en ;
+    rdfs:domain iac:Identifier ;
+    rdfs:range xsd:string .
+
+# Access Control Properties
+iac:hasAccessRight a rdf:Property ;
+    rdfs:label "has access right"@en ;
+    rdfs:comment "Direct access rights granted to an identity."@en ;
+    rdfs:domain iac:Identity ;
+    rdfs:range iac:AccessRight .
+
+iac:accessTo a rdf:Property ;
+    rdfs:label "access to"@en ;
+    rdfs:comment "Resources that an access right grants access to."@en ;
+    rdfs:domain iac:AccessRight ;
+    rdfs:range iac:Resource .
+
+iac:grantedBy a rdf:Property ;
+    rdfs:label "granted by"@en ;
+    rdfs:comment "The identity that granted this access right."@en ;
+    rdfs:domain iac:AccessRight ;
+    rdfs:range iac:Identity .
+
+iac:grantedOn a rdf:Property ;
+    rdfs:label "granted on"@en ;
+    rdfs:comment "When the access right was granted."@en ;
+    rdfs:domain iac:AccessRight ;
+    rdfs:range xsd:dateTime .
+
+iac:expiresOn a rdf:Property ;
+    rdfs:label "expires on"@en ;
+    rdfs:comment "When the access right expires."@en ;
+    rdfs:domain iac:AccessRight ;
+    rdfs:range xsd:dateTime .
+
+# Authentication Properties
+iac:authenticatedBy a rdf:Property ;
+    rdfs:label "authenticated by"@en ;
+    rdfs:comment "The method used to authenticate this identity."@en ;
+    rdfs:domain iac:Identity ;
+    rdfs:range iac:AuthenticationMethod .
+
+iac:lastAuthenticated a rdf:Property ;
+    rdfs:label "last authenticated"@en ;
+    rdfs:comment "When the identity was last authenticated."@en ;
+    rdfs:domain iac:Identity ;
+    rdfs:range xsd:dateTime .
+
+iac:authenticationStrength a rdf:Property ;
+    rdfs:label "authentication strength"@en ;
+    rdfs:comment "The strength or assurance level of the authentication."@en ;
+    rdfs:domain iac:AuthenticationMethod ;
+    rdfs:range xsd:string .
+
+# Trust and Federation Properties
+iac:trusts a rdf:Property ;
+    rdfs:label "trusts"@en ;
+    rdfs:comment "Indicates a trust relationship to another identity or provider."@en ;
+    rdfs:domain iac:Identity ;
+    rdfs:range iac:Identity .
+
+iac:isTrustedBy a rdf:Property ;
+    rdfs:label "is trusted by"@en ;
+    rdfs:comment "Inverse of trusts relationship."@en ;
+    rdfs:domain iac:Identity ;
+    rdfs:range iac:Identity .
+
+iac:federatedWith a rdf:Property ;
+    rdfs:label "federated with"@en ;
+    rdfs:comment "Indicates federation with another identity provider."@en ;
+    rdfs:domain iac:IdentityProvider ;
+    rdfs:range iac:IdentityProvider .
+
+iac:sameAs a rdf:Property ;
+    rdfs:label "same as"@en ;
+    rdfs:comment "Indicates that two identifiers refer to the same identity."@en ;
+    rdfs:domain iac:Identifier ;
+    rdfs:range iac:Identifier .
+
+# Group Properties
+iac:memberOf a rdf:Property ;
+    rdfs:label "member of"@en ;
+    rdfs:comment "Identity group membership."@en ;
+    rdfs:domain iac:Identity ;
+    rdfs:range iac:IdentityGroup .
+
+iac:hasMember a rdf:Property ;
+    rdfs:label "has member"@en ;
+    rdfs:comment "Members of an identity group."@en ;
+    rdfs:domain iac:IdentityGroup ;
+    rdfs:range iac:Identity .
+
+# Token Properties
+iac:tokenIssuer a rdf:Property ;
+    rdfs:label "token issuer"@en ;
+    rdfs:comment "The entity that issued the access token."@en ;
+    rdfs:domain iac:AccessToken ;
+    rdfs:range iac:IdentityProvider .
+
+iac:tokenScope a rdf:Property ;
+    rdfs:label "token scope"@en ;
+    rdfs:comment "The scope of access granted by the token."@en ;
+    rdfs:domain iac:AccessToken ;
+    rdfs:range xsd:string .
+
+iac:tokenExpiry a rdf:Property ;
+    rdfs:label "token expiry"@en ;
+    rdfs:comment "When the token expires."@en ;
+    rdfs:domain iac:AccessToken ;
+    rdfs:range xsd:dateTime .
+
+#################################################################
+# Common Access Rights
+#################################################################
+
+iac:Read a iac:AccessRight ;
+    rdfs:label "Read"@en ;
+    rdfs:comment "Right to read or view a resource."@en .
+
+iac:Write a iac:AccessRight ;
+    rdfs:label "Write"@en ;
+    rdfs:comment "Right to modify a resource."@en .
+
+iac:Delete a iac:AccessRight ;
+    rdfs:label "Delete"@en ;
+    rdfs:comment "Right to delete a resource."@en .
+
+iac:Execute a iac:AccessRight ;
+    rdfs:label "Execute"@en ;
+    rdfs:comment "Right to execute a resource."@en .
+
+iac:Grant a iac:AccessRight ;
+    rdfs:label "Grant"@en ;
+    rdfs:comment "Right to grant access to others."@en .
+
+iac:Revoke a iac:AccessRight ;
+    rdfs:label "Revoke"@en ;
+    rdfs:comment "Right to revoke access from others."@en .

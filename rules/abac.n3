@@ -1,0 +1,309 @@
+@prefix abac: <https://www.w3.org/ns/auth/abac#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+#################################################################
+# ABAC Inference Rules
+# These rules implement Attribute-Based Access Control semantics
+#################################################################
+
+### Request Pattern ###################################################
+# An access request SHALL be described using:
+#   ?request abac:requestSubject ?subject ;
+#           abac:requestResource ?resource ;
+#           abac:requestAction ?action ;
+#           abac:requestEnvironment ?environment .
+######################################################################
+
+# Rule 1: Basic Policy Evaluation - Evaluate applicable policies
+{
+    ?request abac:requestSubject ?subject ;
+             abac:requestResource ?resource ;
+             abac:requestAction ?action ;
+             abac:requestEnvironment ?environment .
+    
+    ?policy a abac:Policy ;
+            abac:target ?target ;
+            abac:hasRule ?rule .
+    
+    # Check if policy target matches request
+    ?target abac:matchesRequest ?request .
+} => {
+    ?request abac:applicablePolicy ?policy .
+} .
+
+# Rule 2: Target Matching - Subject attributes
+{
+    ?target abac:subjectMatch ?condition .
+    ?condition abac:attributeName ?attrName ;
+               abac:operator ?op ;
+               abac:value ?expectedValue .
+    
+    ?subject abac:hasAttribute ?attr .
+    ?attr abac:attributeName ?attrName ;
+          abac:attributeValue ?actualValue .
+    
+    # Evaluate condition based on operator
+    (?actualValue ?op ?expectedValue) log:query true .
+} => {
+    ?target abac:subjectMatches true .
+} .
+
+# Rule 3: Target Matching - Resource attributes
+{
+    ?target abac:resourceMatch ?condition .
+    ?condition abac:attributeName ?attrName ;
+               abac:operator ?op ;
+               abac:value ?expectedValue .
+    
+    ?resource abac:hasAttribute ?attr .
+    ?attr abac:attributeName ?attrName ;
+          abac:attributeValue ?actualValue .
+    
+    (?actualValue ?op ?expectedValue) log:query true .
+} => {
+    ?target abac:resourceMatches true .
+} .
+
+# Rule 4: Target Matching - Action attributes
+{
+    ?target abac:actionMatch ?condition .
+    ?condition abac:attributeName ?attrName ;
+               abac:operator ?op ;
+               abac:value ?expectedValue .
+    
+    ?action abac:hasAttribute ?attr .
+    ?attr abac:attributeName ?attrName ;
+          abac:attributeValue ?actualValue .
+    
+    (?actualValue ?op ?expectedValue) log:query true .
+} => {
+    ?target abac:actionMatches true .
+} .
+
+# Rule 5: Target Matching - Environment attributes
+{
+    ?target abac:environmentMatch ?condition .
+    ?condition abac:attributeName ?attrName ;
+               abac:operator ?op ;
+               abac:value ?expectedValue .
+    
+    ?environment abac:hasAttribute ?attr .
+    ?attr abac:attributeName ?attrName ;
+          abac:attributeValue ?actualValue .
+    
+    (?actualValue ?op ?expectedValue) log:query true .
+} => {
+    ?target abac:environmentMatches true .
+} .
+
+# Rule 6: Complete Target Match
+{
+    ?target abac:subjectMatches true ;
+            abac:resourceMatches true ;
+            abac:actionMatches true ;
+            abac:environmentMatches true .
+    ?request a abac:Request .
+} => {
+    ?target abac:matchesRequest ?request .
+} .
+
+# Rule 7: Rule Evaluation - Permit
+{
+    ?request abac:applicablePolicy ?policy .
+    ?policy abac:hasRule ?rule .
+    ?rule abac:effect "Permit" ;
+          abac:hasCondition ?condition .
+    
+    ?condition abac:evaluatesTo true .
+} => {
+    ?rule abac:decision abac:Permit .
+} .
+
+# Rule 8: Rule Evaluation - Deny
+{
+    ?request abac:applicablePolicy ?policy .
+    ?policy abac:hasRule ?rule .
+    ?rule abac:effect "Deny" ;
+          abac:hasCondition ?condition .
+    
+    ?condition abac:evaluatesTo true .
+} => {
+    ?rule abac:decision abac:Deny .
+} .
+
+# Rule 9: String Equality Operator
+{
+    ?condition abac:attributeName ?name ;
+               abac:operator "equals" ;
+               abac:value ?expected .
+    
+    ?entity abac:hasAttribute ?attr .
+    ?attr abac:attributeName ?name ;
+          abac:attributeValue ?actual .
+    
+    ?actual string:equalIgnoringCase ?expected .
+} => {
+    ?condition abac:evaluatesTo true .
+} .
+
+# Rule 10: Numeric Comparison - Greater Than
+{
+    ?condition abac:attributeName ?name ;
+               abac:operator "greaterThan" ;
+               abac:value ?expected .
+    
+    ?entity abac:hasAttribute ?attr .
+    ?attr abac:attributeName ?name ;
+          abac:attributeValue ?actual .
+    
+    ?actual math:greaterThan ?expected .
+} => {
+    ?condition abac:evaluatesTo true .
+} .
+
+# Rule 11: Numeric Comparison - Less Than
+{
+    ?condition abac:attributeName ?name ;
+               abac:operator "lessThan" ;
+               abac:value ?expected .
+    
+    ?entity abac:hasAttribute ?attr .
+    ?attr abac:attributeName ?name ;
+          abac:attributeValue ?actual .
+    
+    ?actual math:lessThan ?expected .
+} => {
+    ?condition abac:evaluatesTo true .
+} .
+
+# Rule 12: Set Membership - In
+{
+    ?condition abac:attributeName ?name ;
+               abac:operator "in" ;
+               abac:value ?set .
+    
+    ?entity abac:hasAttribute ?attr .
+    ?attr abac:attributeName ?name ;
+          abac:attributeValue ?actual .
+    
+    ?actual log:in ?set .
+} => {
+    ?condition abac:evaluatesTo true .
+} .
+
+# Rule 13: Complex Condition - AND
+{
+    ?condition a abac:AndCondition ;
+               abac:leftCondition ?left ;
+               abac:rightCondition ?right .
+    
+    ?left abac:evaluatesTo true .
+    ?right abac:evaluatesTo true .
+} => {
+    ?condition abac:evaluatesTo true .
+} .
+
+# Rule 14: Complex Condition - OR
+{
+    ?condition a abac:OrCondition ;
+               abac:leftCondition ?left ;
+               abac:rightCondition ?right .
+    
+    ?left abac:evaluatesTo true .
+} => {
+    ?condition abac:evaluatesTo true .
+} .
+
+{
+    ?condition a abac:OrCondition ;
+               abac:leftCondition ?left ;
+               abac:rightCondition ?right .
+    
+    ?right abac:evaluatesTo true .
+} => {
+    ?condition abac:evaluatesTo true .
+} .
+
+# Rule 15: Complex Condition - NOT
+{
+    ?condition a abac:NotCondition ;
+               abac:condition ?inner .
+    
+    ?inner log:notIncludes {?inner abac:evaluatesTo true} .
+} => {
+    ?condition abac:evaluatesTo true .
+} .
+
+# Rule 16: Policy Combining - Permit Override
+{
+    ?policySet abac:combiningAlgorithm "permit-override" ;
+               abac:hasPolicy ?policy .
+    ?policy abac:decision abac:Permit .
+} => {
+    ?policySet abac:decision abac:Permit .
+} .
+
+# Rule 17: Policy Combining - Deny Override
+{
+    ?policySet abac:combiningAlgorithm "deny-override" ;
+               abac:hasPolicy ?policy .
+    ?policy abac:decision abac:Deny .
+} => {
+    ?policySet abac:decision abac:Deny .
+} .
+
+# Rule 18: Time-based Conditions
+{
+    ?condition abac:attributeName "currentTime" ;
+               abac:operator "between" ;
+               abac:startTime ?start ;
+               abac:endTime ?end .
+    
+    ?environment abac:hasAttribute ?attr .
+    ?attr abac:attributeName "currentTime" ;
+          abac:attributeValue ?current .
+    
+    ?current math:greaterThan ?start .
+    ?current math:lessThan ?end .
+} => {
+    ?condition abac:evaluatesTo true .
+} .
+
+# Rule 19: Location-based Access
+{
+    ?condition abac:attributeName "location" ;
+               abac:operator "within" ;
+               abac:value ?allowedLocation .
+    
+    ?environment abac:hasAttribute ?attr .
+    ?attr abac:attributeName "location" ;
+          abac:attributeValue ?currentLocation .
+    
+    ?currentLocation abac:within ?allowedLocation .
+} => {
+    ?condition abac:evaluatesTo true .
+} .
+
+# Rule 20: Obligation Handling
+{
+    ?request abac:decision ?decision .
+    ?policy abac:hasObligation ?obligation .
+    ?obligation abac:appliesTo ?decision .
+} => {
+    ?request abac:mustFulfill ?obligation .
+} .
+
+# Rule 21: Default Deny - No applicable policy
+{
+    ?request a abac:Request .
+    ?request log:notIncludes {?request abac:decision abac:Permit} .
+    ?request log:notIncludes {?request abac:decision abac:Deny} .
+} => {
+    ?request abac:decision abac:NotApplicable ;
+             abac:reason "No applicable policy found" .
+} .

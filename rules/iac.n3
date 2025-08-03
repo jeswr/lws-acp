@@ -1,0 +1,310 @@
+@prefix iac: <https://www.w3.org/ns/auth/iac#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix crypto: <http://www.w3.org/2000/10/swap/crypto#> .
+
+#################################################################
+# IAC Inference Rules
+# These rules implement Identity-Based Access Control semantics
+#################################################################
+
+### Request Pattern ###################################################
+# An access request SHALL be described using:
+#   ?request iac:requestedBy ?identity ;
+#           iac:requestedResource ?resource ;
+#           iac:requestedRight ?right .
+######################################################################
+
+# Rule 1: Direct Identity Access - Identity has direct access rights
+{
+    ?request iac:requestedBy ?identity ;
+             iac:requestedResource ?resource ;
+             iac:requestedRight ?right .
+    
+    ?identity iac:hasAccessRight ?accessRight .
+    ?accessRight iac:accessTo ?resource ;
+                 a ?right .
+} => {
+    ?request iac:decision iac:Permit ;
+             iac:reason "Identity has direct access right to resource" .
+} .
+
+# Rule 2: Identity Authentication Check
+{
+    ?request iac:requestedBy ?identity .
+    ?identity iac:authenticatedBy ?method ;
+              iac:lastAuthenticated ?time .
+    
+    # Check if authentication is recent (within session timeout)
+    ?now a iac:CurrentTime .
+    (?now ?time ?diff) log:difference ?scope .
+    ?diff log:lessThan "3600"^^xsd:integer . # 1 hour session
+} => {
+    ?identity iac:authenticationValid true .
+} .
+
+# Rule 3: Multi-factor Authentication Requirement
+{
+    ?resource iac:requiresMFA true .
+    ?request iac:requestedBy ?identity ;
+             iac:requestedResource ?resource .
+    
+    ?identity iac:authenticatedBy ?method .
+    ?method a iac:MultiFactorAuthentication .
+} => {
+    ?identity iac:mfaSatisfied true .
+} .
+
+# Rule 4: Federated Identity Access
+{
+    ?request iac:requestedBy ?federatedIdentity ;
+             iac:requestedResource ?resource ;
+             iac:requestedRight ?right .
+    
+    ?federatedIdentity a iac:FederatedIdentity ;
+                       iac:federatedWith ?provider .
+    ?resource iac:trustsProvider ?provider .
+    
+    ?federatedIdentity iac:hasAccessRight ?accessRight .
+    ?accessRight iac:accessTo ?resource ;
+                 a ?right .
+} => {
+    ?request iac:decision iac:Permit ;
+             iac:reason "Federated identity has access through trusted provider" .
+} .
+
+# Rule 5: Identity Equivalence - Same As
+{
+    ?identity1 iac:hasIdentifier ?id1 .
+    ?identity2 iac:hasIdentifier ?id2 .
+    ?id1 iac:sameAs ?id2 .
+} => {
+    ?identity1 iac:equivalentTo ?identity2 .
+} .
+
+# Rule 6: Transitive Identity Equivalence
+{
+    ?identity1 iac:equivalentTo ?identity2 .
+    ?identity2 iac:equivalentTo ?identity3 .
+} => {
+    ?identity1 iac:equivalentTo ?identity3 .
+} .
+
+# Rule 7: Equivalent Identity Access Rights
+{
+    ?request iac:requestedBy ?identity1 ;
+             iac:requestedResource ?resource ;
+             iac:requestedRight ?right .
+    
+    ?identity1 iac:equivalentTo ?identity2 .
+    ?identity2 iac:hasAccessRight ?accessRight .
+    ?accessRight iac:accessTo ?resource ;
+                 a ?right .
+} => {
+    ?request iac:decision iac:Permit ;
+             iac:reason "Equivalent identity has access right" .
+} .
+
+# Rule 8: Trust Relationship Access
+{
+    ?request iac:requestedBy ?identity1 ;
+             iac:requestedResource ?resource ;
+             iac:requestedRight ?right .
+    
+    ?identity1 iac:trusts ?identity2 .
+    ?resource iac:owner ?identity2 .
+    ?identity2 iac:grants ?right ;
+               iac:to ?identity1 ;
+               iac:for ?resource .
+} => {
+    ?request iac:decision iac:Permit ;
+             iac:reason "Access granted through trust relationship" .
+} .
+
+# Rule 9: Group-based Identity Access
+{
+    ?request iac:requestedBy ?identity ;
+             iac:requestedResource ?resource ;
+             iac:requestedRight ?right .
+    
+    ?identity iac:memberOf ?group .
+    ?group iac:hasAccessRight ?accessRight .
+    ?accessRight iac:accessTo ?resource ;
+                 a ?right .
+} => {
+    ?request iac:decision iac:Permit ;
+             iac:reason "Identity has access through group membership" .
+} .
+
+# Rule 10: Token-based Access
+{
+    ?request iac:requestedBy ?identity ;
+             iac:requestedResource ?resource ;
+             iac:requestedRight ?right ;
+             iac:withToken ?token .
+    
+    ?token a iac:AccessToken ;
+           iac:tokenIssuer ?issuer ;
+           iac:tokenScope ?scope ;
+           iac:tokenExpiry ?expiry .
+    
+    ?resource iac:trustsIssuer ?issuer .
+    ?scope log:includes ?right .
+    ?now a iac:CurrentTime .
+    ?now log:lessThan ?expiry .
+} => {
+    ?request iac:decision iac:Permit ;
+             iac:reason "Valid access token presented" .
+} .
+
+# Rule 11: Certificate-based Identity Verification
+{
+    ?identity iac:hasCredential ?cert .
+    ?cert a iac:CertificateCredential ;
+          iac:issuer ?ca ;
+          iac:subject ?identity ;
+          iac:validUntil ?expiry .
+    
+    ?ca iac:trustedCA true .
+    ?now a iac:CurrentTime .
+    ?now log:lessThan ?expiry .
+} => {
+    ?identity iac:certificateValid true .
+} .
+
+# Rule 12: Access Right Delegation
+{
+    ?identity1 iac:hasAccessRight ?right1 .
+    ?right1 iac:accessTo ?resource ;
+            iac:canDelegate true .
+    
+    ?identity1 iac:delegates ?right2 ;
+               iac:to ?identity2 .
+    ?right2 iac:accessTo ?resource ;
+            iac:delegatedFrom ?right1 .
+} => {
+    ?identity2 iac:hasAccessRight ?right2 .
+} .
+
+# Rule 13: Time-bound Access Rights
+{
+    ?request iac:requestedBy ?identity ;
+             iac:requestedResource ?resource ;
+             iac:requestedRight ?right .
+    
+    ?identity iac:hasAccessRight ?accessRight .
+    ?accessRight iac:accessTo ?resource ;
+                 a ?right ;
+                 iac:validFrom ?from ;
+                 iac:validUntil ?until .
+    
+    ?now a iac:CurrentTime .
+    ?now log:greaterThan ?from .
+    ?now log:lessThan ?until .
+} => {
+    ?request iac:decision iac:Permit ;
+             iac:reason "Identity has valid time-bound access right" .
+} .
+
+# Rule 14: Identity Provider Trust Chain
+{
+    ?identity iac:identityProvider ?provider1 .
+    ?provider1 iac:federatedWith ?provider2 .
+    ?provider2 iac:trustedBy ?resource .
+} => {
+    ?identity iac:trustedForResource ?resource .
+} .
+
+# Rule 15: Revoked Access Check
+{
+    ?request iac:requestedBy ?identity ;
+             iac:requestedResource ?resource .
+    
+    ?revocation iac:revokedIdentity ?identity ;
+                iac:forResource ?resource ;
+                iac:revokedOn ?revokeTime .
+    
+    ?now a iac:CurrentTime .
+    ?now log:greaterThan ?revokeTime .
+} => {
+    ?request iac:decision iac:Deny ;
+             iac:reason "Identity access has been revoked" .
+} .
+
+# Rule 16: Biometric Authentication
+{
+    ?identity iac:hasCredential ?biometric .
+    ?biometric a iac:BiometricCredential ;
+               iac:biometricType ?type ;
+               iac:matchScore ?score .
+    
+    ?score log:greaterThan "0.95"^^xsd:decimal .
+} => {
+    ?identity iac:biometricVerified true .
+} .
+
+# Rule 17: Identity Assurance Level
+{
+    ?request iac:requestedResource ?resource .
+    ?resource iac:requiredAssuranceLevel ?required .
+    
+    ?request iac:requestedBy ?identity .
+    ?identity iac:authenticatedBy ?method .
+    ?method iac:authenticationStrength ?strength .
+    
+    ?strength log:greaterThan ?required .
+} => {
+    ?identity iac:assuranceSatisfied true .
+} .
+
+# Rule 18: Grant Access Right
+{
+    ?grantor iac:hasAccessRight ?grantRight .
+    ?grantRight a iac:Grant ;
+                iac:accessTo ?resource .
+    
+    ?request a iac:GrantRequest ;
+             iac:requestedBy ?grantor ;
+             iac:grantTo ?grantee ;
+             iac:grantRight ?right ;
+             iac:forResource ?resource .
+} => {
+    ?grantee iac:hasAccessRight [
+        a ?right ;
+        iac:accessTo ?resource ;
+        iac:grantedBy ?grantor ;
+        iac:grantedOn ?now
+    ] .
+} .
+
+# Rule 19: Revoke Access Right
+{
+    ?revoker iac:hasAccessRight ?revokeRight .
+    ?revokeRight a iac:Revoke ;
+                 iac:accessTo ?resource .
+    
+    ?request a iac:RevokeRequest ;
+             iac:requestedBy ?revoker ;
+             iac:revokeFrom ?identity ;
+             iac:revokeRight ?right ;
+             iac:forResource ?resource .
+} => {
+    ?revocation iac:revokedIdentity ?identity ;
+                iac:forResource ?resource ;
+                iac:revokedBy ?revoker ;
+                iac:revokedOn ?now .
+} .
+
+# Rule 20: Default Deny
+{
+    ?request iac:requestedBy ?identity ;
+             iac:requestedResource ?resource ;
+             iac:requestedRight ?right .
+    
+    ?request log:notIncludes {?request iac:decision iac:Permit} .
+} => {
+    ?request iac:decision iac:Deny ;
+             iac:reason "No matching access right found for identity" .
+} .

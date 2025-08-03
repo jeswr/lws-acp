@@ -1,0 +1,293 @@
+@prefix abac: <https://www.w3.org/ns/auth/abac#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+# ABAC (Attribute-Based Access Control) Vocabulary
+# This vocabulary defines terms for implementing attribute-based access control systems
+
+#################################################################
+# Core Classes
+#################################################################
+
+abac:Subject a rdfs:Class ;
+    rdfs:label "Subject"@en ;
+    rdfs:comment """A subject represents an entity (user, process, device) requesting access to a resource.
+    Subjects possess attributes that are evaluated during access control decisions."""@en ;
+    rdfs:subClassOf foaf:Agent .
+
+abac:Resource a rdfs:Class ;
+    rdfs:label "Resource"@en ;
+    rdfs:comment """A resource represents an object or entity that subjects request access to.
+    Resources have attributes that describe their properties and characteristics."""@en .
+
+abac:Action a rdfs:Class ;
+    rdfs:label "Action"@en ;
+    rdfs:comment """An action represents an operation that a subject wants to perform on a resource.
+    Actions can have attributes that provide additional context."""@en .
+
+abac:Environment a rdfs:Class ;
+    rdfs:label "Environment"@en ;
+    rdfs:comment """Environment represents the context in which an access request is made,
+    including time, location, network, and other contextual factors."""@en .
+
+abac:Attribute a rdfs:Class ;
+    rdfs:label "Attribute"@en ;
+    rdfs:comment """An attribute is a characteristic or property of a subject, resource, action, or environment
+    that can be used in access control decisions."""@en .
+
+abac:Policy a rdfs:Class ;
+    rdfs:label "Policy"@en ;
+    rdfs:comment """A policy defines rules that determine whether access should be granted or denied
+    based on attribute values and conditions."""@en .
+
+abac:PolicySet a rdfs:Class ;
+    rdfs:label "Policy Set"@en ;
+    rdfs:comment "A collection of policies that are evaluated together."@en .
+
+abac:Rule a rdfs:Class ;
+    rdfs:label "Rule"@en ;
+    rdfs:comment """A rule is a specific condition within a policy that evaluates to permit or deny."""@en .
+
+abac:Condition a rdfs:Class ;
+    rdfs:label "Condition"@en ;
+    rdfs:comment """A condition is a boolean expression that evaluates attributes to determine
+    if a rule should apply."""@en .
+
+abac:Decision a rdfs:Class ;
+    rdfs:label "Decision"@en ;
+    rdfs:comment "The result of evaluating an access request against policies (Permit, Deny, NotApplicable, Indeterminate)."@en .
+
+abac:Obligation a rdfs:Class ;
+    rdfs:label "Obligation"@en ;
+    rdfs:comment """An action that must be performed in conjunction with the enforcement of an access decision."""@en .
+
+abac:AttributeValue a rdfs:Class ;
+    rdfs:label "Attribute Value"@en ;
+    rdfs:comment "A specific value assigned to an attribute."@en .
+
+#################################################################
+# Attribute Categories
+#################################################################
+
+abac:SubjectAttribute a rdfs:Class ;
+    rdfs:label "Subject Attribute"@en ;
+    rdfs:comment "An attribute associated with a subject."@en ;
+    rdfs:subClassOf abac:Attribute .
+
+abac:ResourceAttribute a rdfs:Class ;
+    rdfs:label "Resource Attribute"@en ;
+    rdfs:comment "An attribute associated with a resource."@en ;
+    rdfs:subClassOf abac:Attribute .
+
+abac:ActionAttribute a rdfs:Class ;
+    rdfs:label "Action Attribute"@en ;
+    rdfs:comment "An attribute associated with an action."@en ;
+    rdfs:subClassOf abac:Attribute .
+
+abac:EnvironmentAttribute a rdfs:Class ;
+    rdfs:label "Environment Attribute"@en ;
+    rdfs:comment "An attribute associated with the environment."@en ;
+    rdfs:subClassOf abac:Attribute .
+
+#################################################################
+# Properties
+#################################################################
+
+# Attribute Assignment
+abac:hasAttribute a rdf:Property ;
+    rdfs:label "has attribute"@en ;
+    rdfs:comment "Associates an entity with an attribute."@en ;
+    rdfs:range abac:Attribute .
+
+abac:attributeName a rdf:Property ;
+    rdfs:label "attribute name"@en ;
+    rdfs:comment "The name of an attribute."@en ;
+    rdfs:domain abac:Attribute ;
+    rdfs:range xsd:string .
+
+abac:attributeValue a rdf:Property ;
+    rdfs:label "attribute value"@en ;
+    rdfs:comment "The value of an attribute."@en ;
+    rdfs:domain abac:Attribute .
+
+abac:attributeType a rdf:Property ;
+    rdfs:label "attribute type"@en ;
+    rdfs:comment "The data type of an attribute value."@en ;
+    rdfs:domain abac:Attribute ;
+    rdfs:range rdfs:Datatype .
+
+# Policy Properties
+abac:hasPolicy a rdf:Property ;
+    rdfs:label "has policy"@en ;
+    rdfs:comment "Associates a policy set with a policy."@en ;
+    rdfs:domain abac:PolicySet ;
+    rdfs:range abac:Policy .
+
+abac:hasRule a rdf:Property ;
+    rdfs:label "has rule"@en ;
+    rdfs:comment "Associates a policy with a rule."@en ;
+    rdfs:domain abac:Policy ;
+    rdfs:range abac:Rule .
+
+abac:hasCondition a rdf:Property ;
+    rdfs:label "has condition"@en ;
+    rdfs:comment "Associates a rule with a condition."@en ;
+    rdfs:domain abac:Rule ;
+    rdfs:range abac:Condition .
+
+abac:effect a rdf:Property ;
+    rdfs:label "effect"@en ;
+    rdfs:comment "The effect of a rule (Permit or Deny)."@en ;
+    rdfs:domain abac:Rule ;
+    rdfs:range xsd:string .
+
+abac:target a rdf:Property ;
+    rdfs:label "target"@en ;
+    rdfs:comment "Specifies when a policy or rule is applicable."@en ;
+    rdfs:range abac:Condition .
+
+abac:combiningAlgorithm a rdf:Property ;
+    rdfs:label "combining algorithm"@en ;
+    rdfs:comment "Algorithm for combining multiple policy or rule decisions."@en ;
+    rdfs:domain abac:PolicySet ;
+    rdfs:range xsd:string .
+
+# Request Properties
+abac:requestSubject a rdf:Property ;
+    rdfs:label "request subject"@en ;
+    rdfs:comment "The subject making an access request."@en ;
+    rdfs:range abac:Subject .
+
+abac:requestResource a rdf:Property ;
+    rdfs:label "request resource"@en ;
+    rdfs:comment "The resource being requested."@en ;
+    rdfs:range abac:Resource .
+
+abac:requestAction a rdf:Property ;
+    rdfs:label "request action"@en ;
+    rdfs:comment "The action being requested."@en ;
+    rdfs:range abac:Action .
+
+abac:requestEnvironment a rdf:Property ;
+    rdfs:label "request environment"@en ;
+    rdfs:comment "The environment context of the request."@en ;
+    rdfs:range abac:Environment .
+
+# Decision Properties
+abac:decision a rdf:Property ;
+    rdfs:label "decision"@en ;
+    rdfs:comment "The access control decision result."@en ;
+    rdfs:range abac:Decision .
+
+abac:hasObligation a rdf:Property ;
+    rdfs:label "has obligation"@en ;
+    rdfs:comment "Associates a decision with obligations."@en ;
+    rdfs:domain abac:Decision ;
+    rdfs:range abac:Obligation .
+
+#################################################################
+# Common Subject Attributes
+#################################################################
+
+abac:userId a abac:SubjectAttribute ;
+    rdfs:label "User ID"@en ;
+    rdfs:comment "Unique identifier for a user."@en .
+
+abac:userName a abac:SubjectAttribute ;
+    rdfs:label "User Name"@en ;
+    rdfs:comment "The name of the user."@en .
+
+abac:userRole a abac:SubjectAttribute ;
+    rdfs:label "User Role"@en ;
+    rdfs:comment "Role(s) assigned to the user."@en .
+
+abac:department a abac:SubjectAttribute ;
+    rdfs:label "Department"@en ;
+    rdfs:comment "The department the user belongs to."@en .
+
+abac:clearanceLevel a abac:SubjectAttribute ;
+    rdfs:label "Clearance Level"@en ;
+    rdfs:comment "Security clearance level of the user."@en .
+
+abac:location a abac:SubjectAttribute ;
+    rdfs:label "Location"@en ;
+    rdfs:comment "Physical or network location of the subject."@en .
+
+#################################################################
+# Common Resource Attributes
+#################################################################
+
+abac:resourceId a abac:ResourceAttribute ;
+    rdfs:label "Resource ID"@en ;
+    rdfs:comment "Unique identifier for a resource."@en .
+
+abac:resourceType a abac:ResourceAttribute ;
+    rdfs:label "Resource Type"@en ;
+    rdfs:comment "The type or category of the resource."@en .
+
+abac:resourceOwner a abac:ResourceAttribute ;
+    rdfs:label "Resource Owner"@en ;
+    rdfs:comment "The owner of the resource."@en .
+
+abac:sensitivity a abac:ResourceAttribute ;
+    rdfs:label "Sensitivity"@en ;
+    rdfs:comment "The sensitivity or classification level of the resource."@en .
+
+abac:creationDate a abac:ResourceAttribute ;
+    rdfs:label "Creation Date"@en ;
+    rdfs:comment "When the resource was created."@en .
+
+#################################################################
+# Common Action Attributes
+#################################################################
+
+abac:actionId a abac:ActionAttribute ;
+    rdfs:label "Action ID"@en ;
+    rdfs:comment "Unique identifier for an action."@en .
+
+abac:actionType a abac:ActionAttribute ;
+    rdfs:label "Action Type"@en ;
+    rdfs:comment "The type of action (read, write, delete, etc.)."@en .
+
+#################################################################
+# Common Environment Attributes
+#################################################################
+
+abac:currentTime a abac:EnvironmentAttribute ;
+    rdfs:label "Current Time"@en ;
+    rdfs:comment "The current date and time."@en .
+
+abac:ipAddress a abac:EnvironmentAttribute ;
+    rdfs:label "IP Address"@en ;
+    rdfs:comment "The IP address from which the request originates."@en .
+
+abac:authenticationMethod a abac:EnvironmentAttribute ;
+    rdfs:label "Authentication Method"@en ;
+    rdfs:comment "The method used to authenticate the subject."@en .
+
+abac:encryptionStrength a abac:EnvironmentAttribute ;
+    rdfs:label "Encryption Strength"@en ;
+    rdfs:comment "The strength of encryption used in the connection."@en .
+
+#################################################################
+# Decision Values
+#################################################################
+
+abac:Permit a abac:Decision ;
+    rdfs:label "Permit"@en ;
+    rdfs:comment "Access is granted."@en .
+
+abac:Deny a abac:Decision ;
+    rdfs:label "Deny"@en ;
+    rdfs:comment "Access is denied."@en .
+
+abac:NotApplicable a abac:Decision ;
+    rdfs:label "Not Applicable"@en ;
+    rdfs:comment "The policy does not apply to this request."@en .
+
+abac:Indeterminate a abac:Decision ;
+    rdfs:label "Indeterminate"@en ;
+    rdfs:comment "The policy evaluation could not reach a decision."@en .
