@@ -1,3 +1,213 @@
-# https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps_syntax.html
-
 @prefix s3: <https://www.w3.org/ns/auth/s3#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+
+<https://www.w3.org/ns/auth/s3> a owl:Ontology ;
+  rdfs:label "AWS S3 / IAM Access Control Vocabulary"@en ;
+  dct:description "A vocabulary that captures the main concepts used in AWS Identity & Access Management (IAM) and Amazon S3 access-control policies.  The aim is to allow formal representation and reasoning over AWS access policies within the Linked Web Storage (LWS) context."@en ;
+  vann:preferredNamespacePrefix "s3" ;
+  vann:preferredNamespaceUri "https://www.w3.org/ns/auth/s3#"^^xsd:anyURI ;
+  dct:issued "2024-08-02"^^xsd:date ;
+  rdfs:seeAlso <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html> ,
+               <https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-policies.html> ,
+               <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_grammar.html> .
+
+#################
+#   Classes
+#################
+
+s3:Policy a rdfs:Class ;
+  rdfs:label "Policy"@en ;
+  rdfs:comment "An AWS policy document containing one or more statements that determine whether a request is allowed or denied."@en .
+
+s3:Statement a rdfs:Class ;
+  rdfs:label "Statement"@en ;
+  rdfs:comment "A single permission rule within a policy specifying effect, principals, actions, resources and optional conditions."@en .
+
+s3:Effect a rdfs:Class ;
+  rdfs:label "Effect"@en ;
+  rdfs:comment "The result of a statement when its conditions match.  In AWS the values are \"Allow\" or \"Deny\"; deny takes precedence."@en .
+
+s3:Allow a s3:Effect ;
+  rdfs:label "Allow"@en .
+
+s3:Deny a s3:Effect ;
+  rdfs:label "Deny"@en .
+
+s3:Principal a rdfs:Class ;
+  rdfs:label "Principal"@en ;
+  rdfs:comment "An entity that can make a request to AWS.  Can be an AWS account, IAM user/role, federated user, or AWS service."@en .
+
+s3:AWSAccount a rdfs:Class ;
+  rdfs:subClassOf s3:Principal ;
+  rdfs:label "AWS Account"@en ;
+  rdfs:comment "A 12-digit AWS account identifier used as a principal."@en .
+
+s3:IAMUser a rdfs:Class ;
+  rdfs:subClassOf s3:Principal ;
+  rdfs:label "IAM User"@en .
+
+s3:IAMRole a rdfs:Class ;
+  rdfs:subClassOf s3:Principal ;
+  rdfs:label "IAM Role"@en .
+
+s3:FederatedPrincipal a rdfs:Class ;
+  rdfs:subClassOf s3:Principal ;
+  rdfs:label "Federated Principal"@en .
+
+s3:ServicePrincipal a rdfs:Class ;
+  rdfs:subClassOf s3:Principal ;
+  rdfs:label "Service Principal"@en ;
+  rdfs:comment "An AWS service acting as the caller, e.g. lambda.amazonaws.com"@en .
+
+s3:Resource a rdfs:Class ;
+  rdfs:label "AWS Resource"@en ;
+  rdfs:comment "Any entity that can be addressed by an Amazon Resource Name (ARN)."@en .
+
+s3:S3Bucket a rdfs:Class ;
+  rdfs:subClassOf s3:Resource ;
+  rdfs:label "S3 Bucket"@en .
+
+s3:S3Object a rdfs:Class ;
+  rdfs:subClassOf s3:Resource ;
+  rdfs:label "S3 Object"@en .
+
+s3:Action a rdfs:Class ;
+  rdfs:label "Action"@en ;
+  rdfs:comment "An operation that can be performed on a resource, e.g. s3:GetObject, s3:PutObject."@en .
+
+s3:Condition a rdfs:Class ;
+  rdfs:label "Condition"@en ;
+  rdfs:comment "A Boolean expression that refines when a statement is in scope, expressed as operator key/value pairs."@en .
+
+s3:ConditionOperator a rdfs:Class ;
+  rdfs:label "Condition Operator"@en ;
+  rdfs:comment "Built-in test such as StringEquals, ArnLike, IpAddress, Bool, Null, DateGreaterThan, etc."@en .
+
+s3:AccessRequest a rdfs:Class ;
+  rdfs:label "Access Request"@en ;
+  rdfs:comment "A description of a runtime request to perform an action on a resource by a principal. Used as input to the evaluation rules in rules/s3.n3."@en .
+
+####################
+#   Properties
+####################
+
+s3:hasStatement a rdf:Property ;
+  rdfs:label "has statement"@en ;
+  rdfs:comment "Links a policy to one of its statements."@en ;
+  rdfs:domain s3:Policy ;
+  rdfs:range  s3:Statement .
+
+s3:effect a rdf:Property ;
+  rdfs:label "effect"@en ;
+  rdfs:comment "The outcome of the statement (Allow or Deny)."@en ;
+  rdfs:domain s3:Statement ;
+  rdfs:range  s3:Effect .
+
+s3:principal a rdf:Property ;
+  rdfs:label "principal"@en ;
+  rdfs:comment "A principal to which the statement applies."@en ;
+  rdfs:domain s3:Statement ;
+  rdfs:range  s3:Principal .
+
+s3:notPrincipal a rdf:Property ;
+  rdfs:label "not principal"@en ;
+  rdfs:comment "Principals to which the statement does NOT apply."@en ;
+  rdfs:domain s3:Statement ;
+  rdfs:range  s3:Principal .
+
+s3:action a rdf:Property ;
+  rdfs:label "action"@en ;
+  rdfs:comment "The action or list of actions that the statement allows or denies."@en ;
+  rdfs:domain s3:Statement ;
+  rdfs:range  s3:Action .
+
+s3:notAction a rdf:Property ;
+  rdfs:label "not action"@en ;
+  rdfs:comment "Actions to which the statement does NOT apply."@en ;
+  rdfs:domain s3:Statement ;
+  rdfs:range  s3:Action .
+
+s3:resource a rdf:Property ;
+  rdfs:label "resource"@en ;
+  rdfs:comment "The ARN of the resource to which the statement applies."@en ;
+  rdfs:domain s3:Statement ;
+  rdfs:range  s3:Resource .
+
+s3:notResource a rdf:Property ;
+  rdfs:label "not resource"@en ;
+  rdfs:comment "Resources to which the statement does NOT apply."@en ;
+  rdfs:domain s3:Statement ;
+  rdfs:range  s3:Resource .
+
+s3:condition a rdf:Property ;
+  rdfs:label "condition"@en ;
+  rdfs:comment "Associates a statement with one or more condition blocks."@en ;
+  rdfs:domain s3:Statement ;
+  rdfs:range  s3:Condition .
+
+s3:operator a rdf:Property ;
+  rdfs:label "operator"@en ;
+  rdfs:comment "The condition operator (e.g. StringEquals, IpAddress)."@en ;
+  rdfs:domain s3:Condition ;
+  rdfs:range  s3:ConditionOperator .
+
+s3:conditionKey a rdf:Property ;
+  rdfs:label "condition key"@en ;
+  rdfs:comment "The left-hand side key used in an AWS condition test."@en ;
+  rdfs:domain s3:Condition ;
+  rdfs:range  xsd:string .
+
+s3:conditionValue a rdf:Property ;
+  rdfs:label "condition value"@en ;
+  rdfs:comment "Literal or URI value that the condition operator compares against."@en ;
+  rdfs:domain s3:Condition ;
+  rdfs:range  rdfs:Resource .
+
+s3:policyId a rdf:Property ;
+  rdfs:label "policy identifier"@en ;
+  rdfs:comment "Optional identifier for a policy document."@en ;
+  rdfs:domain s3:Policy ;
+  rdfs:range  xsd:string .
+
+s3:statementId a rdf:Property ;
+  rdfs:label "statement identifier"@en ;
+  rdfs:comment "Optional identifier for a statement within a policy."@en ;
+  rdfs:domain s3:Statement ;
+  rdfs:range  xsd:string .
+
+s3:requestedBy a rdf:Property ;
+  rdfs:label "requested by"@en ;
+  rdfs:comment "Associates an Access Request with the Principal making the call."@en ;
+  rdfs:domain s3:AccessRequest ;
+  rdfs:range  s3:Principal .
+
+s3:requestedAction a rdf:Property ;
+  rdfs:label "requested action"@en ;
+  rdfs:comment "Associates an Access Request with the desired AWS action."@en ;
+  rdfs:domain s3:AccessRequest ;
+  rdfs:range  s3:Action .
+
+s3:requestedResource a rdf:Property ;
+  rdfs:label "requested resource"@en ;
+  rdfs:comment "Associates an Access Request with the target AWS resource (ARN)."@en ;
+  rdfs:domain s3:AccessRequest ;
+  rdfs:range  s3:Resource .
+
+s3:decision a rdf:Property ;
+  rdfs:label "decision"@en ;
+  rdfs:comment "Represents the result of a policy evaluation for a given Access Request."@en ;
+  rdfs:domain s3:AccessRequest ;
+  rdfs:range  s3:Effect .
+
+####################
+#   Example Actions (non-exhaustive)
+####################
+
+s3:GetObject a s3:Action ; rdfs:label "s3:GetObject" .
+s3:PutObject a s3:Action ; rdfs:label "s3:PutObject" .
+s3:ListBucket a s3:Action ; rdfs:label "s3:ListBucket" .

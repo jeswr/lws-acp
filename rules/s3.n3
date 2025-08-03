@@ -1,0 +1,64 @@
+@prefix s3: <https://www.w3.org/ns/auth/s3#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+#################################################################
+#  Simplified inference rules that capture the essential         
+#  semantics of AWS IAM/S3 policy evaluation.                    
+#                                                               
+#  NB:  These rules are intentionally *simplified*.  They do     
+#  not attempt to model every nuance of IAM (e.g. permission     
+#  boundaries, SCPs, session policies, explicit vs implicit deny,
+#  organizations, resource hierarchy, or multi-valued matching   
+#  algorithms).  The objective is to demonstrate how the         
+#  vocabulary in vocabs/s3.ttl can be used to reason about       
+#  typical resource-based & identity-based policies.             
+#################################################################
+
+### A request pattern ###################################################
+#  An access request SHALL be described using the following terms:     
+#    ?req  s3:requestedBy        ?principal ;                           
+#          s3:requestedAction    ?action ;                              
+#          s3:requestedResource  ?resource .                            
+########################################################################
+
+# Rule 1 – explicit deny overrides allow --------------------------------
+{   ?req s3:requestedBy ?p ;
+        s3:requestedAction ?a ;
+        s3:requestedResource ?r .
+
+    ?pol  s3:hasStatement ?st .
+    ?st   s3:effect s3:Deny ;
+          s3:principal ?p ;
+          s3:action ?a ;
+          s3:resource ?r .
+} => { ?req s3:decision s3:DeniedByExplicitDeny . } .
+
+# Rule 2 – allow when at least one matching Allow and no earlier Deny ----
+{   ?req s3:requestedBy ?p ;
+        s3:requestedAction ?a ;
+        s3:requestedResource ?r .
+
+    ?pol  s3:hasStatement ?st .
+    ?st   s3:effect s3:Allow ;
+          s3:principal ?p ;
+          s3:action ?a ;
+          s3:resource ?r .
+
+    # Ensure request not already denied (negation-as-failure) ----------
+    not { ?req s3:decision s3:DeniedByExplicitDeny . }
+} => { ?req s3:decision s3:Allowed . } .
+
+# Rule 3 – default deny --------------------------------------------------
+{   ?req a s3:AccessRequest .
+    not { ?req s3:decision ?any . }
+} => { ?req s3:decision s3:DeniedImplicitly . } .
+
+#################################################################
+#  These rules rely on exact term equality between requested     
+#  principal/action/resource and those specified in a statement. 
+#  In real IAM semantics wildcards ("*" / ArnLike / StringEquals) 
+#  are evaluated; that logic is out-of-scope for this simplified  
+#  demonstration but can be added later using additional rules.  
+#################################################################
