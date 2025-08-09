@@ -2,6 +2,10 @@
 
 Goal: Define an abstract, paradigm-neutral authorization language that can express all major access control models; layer concrete instantiations (protocol, evidence, crypto) beneath it so agents, applications, and browsers can interoperate over Linked Web Storage (LWS) resources.
 
+## How this fits with Linked Web Storage (LWS)
+
+This layering gives us a theoretical grounding for how I (Jesse) am thinking about authZ; for the current version of LWS I suggest we actually define layers 0-7 (including spec documents describing e.g. what the UMA profile looks like). But eventually move layers 4-7 to a separate spec that is upgradable in the same manner as upgrading other layers of the OSI stack.
+
 ## Overview Diagram (Conceptual)
 ```
 +-----------------------------------------------------------+
